@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:15
+    container_name: postgres_smsgatewaydb
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456789
+      POSTGRES_DB: smsgatewaydb
+    ports:
+      - "5438:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - smsgateway-net
+
+  app:
+    build:
+      context: ..
+      dockerfile: ../Dockerfile
+    container_name: smsgateway_app
+    depends_on:
+      - db
+    ports:
+      - "9088:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/smsgatewaydb
+    networks:
+      - smsgateway-net
+
+volumes:
+  db-data:
+
+networks:
+  smsgateway-net:

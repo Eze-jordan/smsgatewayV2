@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+    <meta charset="UTF-8"/>
+    <title th:text="${title}">Facture</title>
+    <style>
+        @page { size: A4; margin: 24mm 18mm; }
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #222; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .meta { margin-bottom: 18px; }
+        .meta div { margin: 2px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+        th { background: #f2f2f2; text-align: left; }
+        .right { text-align: right; }
+        .totals td { font-weight: bold; }
+        .footer { margin-top: 24px; font-size: 11px; color: #666; }
+    </style>
+</head>
+<body>
+<h1>Facture</h1>
+
+<div class="meta">
+    <div><strong>Numéro :</strong> <span th:text="${invoiceNumber}">INV-XXX</span></div>
+    <div><strong>Date facture :</strong> <span th:text="${dateFacture}">2026-09-03</span></div>
+    <div><strong>Exercice :</strong> <span th:text="${annee}">2026</span></div>
+    <div><strong>Période :</strong> <span th:text="${periode}">01/08/2026 - 31/08/2026</span></div>
+</div>
+
+<div class="meta">
+    <div><strong>Client :</strong> <span th:text="${clientRaison}">OgooueTech</span></div>
+    <div><strong>Email :</strong> <span th:text="${clientEmail}">client@test.com</span></div>
+    <div><strong>Émetteur SMS :</strong> <span th:text="${emetteur}">OGOUEETECH</span></div>
+</div>
+
+<table>
+    <thead>
+    <tr>
+        <th>Désignation</th>
+        <th class="right">Quantité (SMS)</th>
+        <th class="right">PU TTC (FCFA)</th>
+        <th class="right">Montant TTC (FCFA)</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td>Consommation SMS du mois</td>
+        <td class="right" th:text="${consommation}">1200</td>
+        <td class="right" th:text="${prixUnitaire}">20</td>
+        <td class="right" th:text="${montant}">24000</td>
+    </tr>
+    </tbody>
+    <tfoot>
+    <tr class="totals">
+        <td colspan="3" class="right">TOTAL TTC</td>
+        <td class="right" th:text="${montant}">24000</td>
+    </tr>
+    </tfoot>
+</table>
+
+<div class="footer">
+    Facture générée automatiquement — OgooueTech SMS Gateway.
+</div>
+</body>
+</html>

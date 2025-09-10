@@ -15,8 +15,8 @@ services:
 
   app:
     build:
-      context: ..
-      dockerfile: ../Dockerfile
+      context: .
+      dockerfile: Dockerfile
     container_name: smsgateway_app
     depends_on:
       - db

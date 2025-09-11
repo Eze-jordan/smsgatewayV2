@@ -40,7 +40,7 @@ public class NotificationService {
 
         try {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("notify@eservices-gabon.com");
+            helper.setFrom("noreply@solutech-one.com");
             helper.setTo(validation.getManager().getEmail());
             helper.setSubject("Votre code d'activation");
 
@@ -73,7 +73,7 @@ public class NotificationService {
         MimeMessage message = javaMailSender.createMimeMessage();
         try {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("notify@eservices-gabon.com");
+            helper.setFrom("noreply@solutech-one.com");
             helper.setTo(client.getEmail());
             helper.setSubject("Vos accès SMS-GATEWAY");
 
@@ -119,7 +119,7 @@ public class NotificationService {
 
             MimeMessage message = javaMailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("notify@eservices-gabon.com");
+            helper.setFrom("noreply@solutech-one.com");
             helper.setTo(client.getEmail());
             helper.setSubject("Réinitialisation de votre mot de passe");
 
@@ -146,7 +146,7 @@ public class NotificationService {
 
             MimeMessage message = javaMailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("notify@eservices-gabon.com");
+            helper.setFrom("noreply@solutech-one.com");
             helper.setTo(manager.getEmail());
             helper.setSubject("Réinitialisation de votre mot de passe Manager");
 
@@ -165,7 +165,7 @@ public class NotificationService {
         }
     }
 
-    @Value("${app.mail.from:notify@eservices-gabon.com}")
+    @Value("${app.mail.from:noreply@solutech-one.com}")
     private String from; // centralise l'expéditeur
     public void envoyerFacture(Facture f, byte[] pdfBytes) {
         if (f.getClient() == null || f.getClient().getEmail() == null) {

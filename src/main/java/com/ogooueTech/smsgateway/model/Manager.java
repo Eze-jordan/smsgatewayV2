@@ -3,14 +3,12 @@ package com.ogooueTech.smsgateway.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ogooueTech.smsgateway.enums.Role;
 import jakarta.persistence.*;
-import org.hibernate.annotations.UuidGenerator;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 
 @Entity
 @Table(name = "Manager_admin")
@@ -27,7 +25,6 @@ public class Manager  implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    private boolean actif = false;
 
 
     public String getIdManager() {
@@ -42,13 +39,6 @@ public class Manager  implements UserDetails {
         this.role = role;
     }
 
-    public boolean isActif() {
-        return actif;
-    }
-
-    public void setActif(boolean actif) {
-        this.actif = actif;
-    }
 
     public void setIdManager(String idManager) {
         this.idManager = idManager;

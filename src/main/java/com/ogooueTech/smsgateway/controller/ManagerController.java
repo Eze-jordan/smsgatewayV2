@@ -1,13 +1,11 @@
 package com.ogooueTech.smsgateway.controller;
 
+import com.ogooueTech.smsgateway.dtos.ChangePasswordManager;
 import com.ogooueTech.smsgateway.dtos.ManagerDTO;
-import com.ogooueTech.smsgateway.model.Manager;
 import com.ogooueTech.smsgateway.repository.ManagerRepository;
 import com.ogooueTech.smsgateway.service.ManagerService;
-import com.ogooueTech.smsgateway.service.ValidationService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,32 +26,31 @@ public class ManagerController {
     private ManagerService managerService;
     @Autowired
     private ManagerRepository managerRepository;
-    @Autowired
-    private ValidationService validationService;
+
 
     @PostMapping("/create")
     @Operation(summary = "Create a manager account", tags = "Managers")
     public ResponseEntity<ManagerDTO> create(@Valid @RequestBody ManagerDTO body) {
         ManagerDTO manager = managerService.create(body);
         return ResponseEntity
-                .created(URI.create("/api/managers/" + manager.getIdManager()))
+                .created(URI.create("/api/V1/managers/" + manager.getIdManager()))
                 .body(manager);
     }
 
-    @PostMapping("/activation")
-    @Operation(
-            summary = "Activate a manager account",
-            description = "Activate a manager account via an OTP code.",
-            tags = "Managers"
-    )
-    public ResponseEntity<String> activation(@RequestBody Map<String, String> activation) {
-        try {
-            this.managerService.activation(activation);
-            return ResponseEntity.ok("Account successfully activated.");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
+    @PatchMapping("/{id}/change-password")
+    @Operation(summary = "Modifier le mot de passe du manager", tags = "Managers")
+    public ResponseEntity<Map<String, String>> changePassword(
+            @PathVariable String id,
+            @Valid @RequestBody ChangePasswordManager body) {
+
+        managerService.changePassword(id, body.getOldPassword(), body.getNewPassword());
+
+        return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "Mot de passe modifié avec succès"
+        ));
     }
+
 
     @GetMapping
     @Operation(summary = "Get all managers", tags = "Managers")
@@ -61,15 +58,7 @@ public class ManagerController {
         return ResponseEntity.ok(managerService.findAll());
     }
 
-    @PostMapping("/resend-otp")
-    @Operation(summary = "Resend OTP code for activation", tags = "Managers")
-    public ResponseEntity<?> resendOtp(@RequestBody ManagerDTO dto) {
-        Manager manager = managerRepository.findByEmail(dto.getEmail())
-                .orElseThrow(() -> new RuntimeException("Manager not found"));
 
-        validationService.renvoyerCode(manager);
-        return ResponseEntity.ok("New OTP sent.");
-    }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get manager by ID", tags = "Managers")
@@ -84,17 +73,6 @@ public class ManagerController {
         return ResponseEntity.ok(managerService.patch(id, body));
     }
 
-    @PatchMapping("/{id}/activate")
-    @Operation(summary = "Activate a manager by ID", tags = "Managers")
-    public ResponseEntity<ManagerDTO> activate(@PathVariable String id) {
-        return ResponseEntity.ok(managerService.activate(id));
-    }
-
-    @PatchMapping("/{id}/deactivate")
-    @Operation(summary = "Deactivate a manager by ID", tags = "Managers")
-    public ResponseEntity<ManagerDTO> deactivate(@PathVariable String id) {
-        return ResponseEntity.ok(managerService.deactivate(id));
-    }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete a manager by ID", tags = "Managers")

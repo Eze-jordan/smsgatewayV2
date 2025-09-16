@@ -3,9 +3,14 @@ package com.ogooueTech.smsgateway.service;
 import com.ogooueTech.smsgateway.enums.StatutCompte;
 import com.ogooueTech.smsgateway.enums.StatutExercice;
 import com.ogooueTech.smsgateway.enums.TypeCompte;
-import com.ogooueTech.smsgateway.model.*;
-import com.ogooueTech.smsgateway.repository.*;
-import lombok.RequiredArgsConstructor;
+import com.ogooueTech.smsgateway.model.CalendrierFacturation;
+import com.ogooueTech.smsgateway.model.Client;
+import com.ogooueTech.smsgateway.model.Exercice;
+import com.ogooueTech.smsgateway.model.Facture;
+import com.ogooueTech.smsgateway.repository.CalendrierFacturationRepository;
+import com.ogooueTech.smsgateway.repository.ClientRepository;
+import com.ogooueTech.smsgateway.repository.ExerciceRepository;
+import com.ogooueTech.smsgateway.repository.FactureRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

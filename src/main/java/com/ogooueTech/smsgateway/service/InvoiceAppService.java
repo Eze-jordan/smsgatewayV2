@@ -1,17 +1,16 @@
 package com.ogooueTech.smsgateway.service;
 
 import com.ogooueTech.smsgateway.repository.FactureRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
 public class InvoiceAppService {
 
     private final FactureRepository factureRepository;
-    private final InvoicePdfService invoicePdfService;
-    private final NotificationService notificationService; // <-- utilise ton service
+    private final com.ogooueTech.smsgateway.service.InvoicePdfService invoicePdfService;
+    private final com.ogooueTech.smsgateway.service.NotificationService notificationService; // <-- utilise ton service
 
-    public InvoiceAppService(FactureRepository factureRepository, InvoicePdfService invoicePdfService, NotificationService notificationService) {
+    public InvoiceAppService(FactureRepository factureRepository, com.ogooueTech.smsgateway.service.InvoicePdfService invoicePdfService, com.ogooueTech.smsgateway.service.NotificationService notificationService) {
         this.factureRepository = factureRepository;
         this.invoicePdfService = invoicePdfService;
         this.notificationService = notificationService;

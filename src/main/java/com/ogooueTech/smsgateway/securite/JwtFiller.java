@@ -17,10 +17,10 @@ import java.io.IOException;
 @Component
 public class JwtFiller extends OncePerRequestFilter {
 
-    private final JwtService jwtService;
+    private final com.ogooueTech.smsgateway.securite.JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
 
-    public JwtFiller(JwtService jwtService, CustomUserDetailsService userDetailsService) {
+    public JwtFiller(com.ogooueTech.smsgateway.securite.JwtService jwtService, CustomUserDetailsService userDetailsService) {
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
     }

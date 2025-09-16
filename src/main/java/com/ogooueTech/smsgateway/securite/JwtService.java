@@ -35,17 +35,23 @@ public class JwtService {
                 .getBody();
     }
 
-    public String generateToken(CustomUserDetails userDetails, String nom, String email, String role, boolean abonneExpire) {
+    public String generateToken(com.ogooueTech.smsgateway.securite.CustomUserDetails userDetails, String nom, String email, String role, boolean abonneExpire) {
         return Jwts.builder()
-                .setSubject(email) // sujet = email (identifiant principal)
+                .setSubject(email)
+                .claim("id", userDetails.getId())
                 .claim("nom", nom)
                 .claim("role", role)
-                .claim("abonneExpire", abonneExpire) // ✅ on embarque l'attribut
+                .claim("abonneExpire", abonneExpire)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // expire dans 10h
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }
+
+    public String extractId(String token) {
+        return extractClaim(token, "id");
+    }
+
 
 
 

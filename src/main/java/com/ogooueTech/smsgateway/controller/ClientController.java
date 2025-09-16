@@ -1,6 +1,6 @@
 package com.ogooueTech.smsgateway.controller;
 
-import com.ogooueTech.smsgateway.dtos.ChangePasswordRequest;
+import com.ogooueTech.smsgateway.dtos.ChangePasswordRequestClient;
 import com.ogooueTech.smsgateway.dtos.ClientDTO;
 import com.ogooueTech.smsgateway.dtos.SoldeNetResponse;
 import com.ogooueTech.smsgateway.service.ClientService;
@@ -51,7 +51,7 @@ public class ClientController {
     @Operation(summary = "Change client password", tags = "Clients")
     public ResponseEntity<?> changePassword(
             @PathVariable String clientId,
-            @Valid @RequestBody ChangePasswordRequest request) {
+            @Valid @RequestBody ChangePasswordRequestClient request) {
 
         try {
             clientService.changePassword(clientId, request.getOldPassword(), request.getNewPassword());

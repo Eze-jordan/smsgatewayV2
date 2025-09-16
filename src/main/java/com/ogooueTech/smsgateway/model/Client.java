@@ -6,7 +6,6 @@ import com.ogooueTech.smsgateway.enums.StatutCompte;
 import com.ogooueTech.smsgateway.enums.TypeCompte;
 import jakarta.persistence.*;
 import lombok.ToString;
-import org.hibernate.annotations.UuidGenerator;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,7 +13,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 
 @Entity
 @Table(name = "clients")

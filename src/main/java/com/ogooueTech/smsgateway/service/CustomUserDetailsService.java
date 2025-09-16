@@ -28,6 +28,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         Manager manager = managerRepository.findByEmail(email).orElse(null);
         if (manager != null) {
             return new CustomUserDetails(
+                    manager.getIdManager(),               // ✅ id ajouté
                     manager.getEmail(),
                     manager.getMotDePasseManager(),
                     manager.getAuthorities(),
@@ -40,6 +41,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         Client client = clientRepository.findByEmail(email).orElse(null);
         if (client != null) {
             return new CustomUserDetails(
+                    client.getIdclients(),
                     client.getEmail(),
                     client.getMotDePasse(),
                     client.getAuthorities(),

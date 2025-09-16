@@ -1,11 +1,9 @@
 package com.ogooueTech.smsgateway.service;
 
 import com.ogooueTech.smsgateway.dtos.ForgotPasswordRequest;
-import com.ogooueTech.smsgateway.dtos.ResetPasswordRequest;
 import com.ogooueTech.smsgateway.model.Client;
 import com.ogooueTech.smsgateway.repository.ClientRepository;
 import com.ogooueTech.smsgateway.securite.JwtService;
-import com.ogooueTech.smsgateway.service.NotificationService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;

@@ -20,12 +20,12 @@ public class ClientService {
 
     private final ClientRepository clientRepository;
     private final PasswordEncoder passwordEncoder;
-    private final NotificationService notificationService;
-    private final ClientsGroupsServiceImpl clientsGroupsServiceImpl; // AJOUT
+    private final com.ogooueTech.smsgateway.service.NotificationService notificationService;
+    private final com.ogooueTech.smsgateway.service.ClientsGroupsServiceImpl clientsGroupsServiceImpl; // AJOUT
 
 
     // Injection des dépendances via constructeur
-    public ClientService(ClientRepository clientRepository, PasswordEncoder passwordEncoder, NotificationService notificationService, ClientsGroupsServiceImpl clientsGroupsServiceImpl) {
+    public ClientService(ClientRepository clientRepository, PasswordEncoder passwordEncoder, com.ogooueTech.smsgateway.service.NotificationService notificationService, com.ogooueTech.smsgateway.service.ClientsGroupsServiceImpl clientsGroupsServiceImpl) {
         this.clientRepository = clientRepository;
         this.passwordEncoder = passwordEncoder;
         this.notificationService = notificationService;

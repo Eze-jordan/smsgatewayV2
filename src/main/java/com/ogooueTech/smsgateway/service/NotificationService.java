@@ -2,7 +2,6 @@ package com.ogooueTech.smsgateway.service;
 
 import com.ogooueTech.smsgateway.model.Client;
 import com.ogooueTech.smsgateway.model.Manager;
-import com.ogooueTech.smsgateway.model.Validation;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,38 +34,53 @@ public class NotificationService {
         this.javaMailSender = javaMailSender;
     }
 
-    public void envoyer(Validation validation) {
+    public void envoyerIdentifiantsManager(Manager manager, String rawPassword) {
         MimeMessage message = javaMailSender.createMimeMessage();
-
         try {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setFrom("noreply@solutech-one.com");
-            helper.setTo(validation.getManager().getEmail());
-            helper.setSubject("Votre code d'activation");
+            helper.setTo(manager.getEmail());
+            helper.setSubject("Vos identifiants SMS-GATEWAY");
 
-            String htmlContent = """
-            <div style="font-family: Arial, sans-serif; background-color: #83BE40; padding: 30px;">
-                <div style="max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-                    <h2 style="text-align: center; color: #2c3e50;">Activation de compte</h2>
-                    <p>Bonjour M/Mme/Mlle.<strong>%s</strong>,</p>
-                    <p>Merci de vous être inscrit sur SMS-GATEWAY.</p>
-                    <p>Voici votre code d'activation :</p>
-                    <div style="text-align: center; font-size: 24px; font-weight: bold; margin: 20px 0; background: #eef; padding: 15px; border-radius: 5px;">%s</div>
-                    <p>⏳ Ce code est valable pendant 60 minutes.</p>
-                    <p style="color: #888; font-size: 12px; text-align: center;">
-                        Si vous n'avez pas demandé cette inscription, veuillez ignorer ce message.
-                    </p>
-                    <p style="text-align: center; color: #aaa; margin-top: 20px;">— SMS-GATEWAY</p>
-                </div>
-            </div>
-        """.formatted(validation.getManager().getNomManager(), validation.getCode());
+            String html = """
+        <div style="font-family: Arial, sans-serif; background-color: #83BE40; padding: 30px;">
+          <div style="max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+            <h2 style="text-align: center; color: #2c3e50;">Bienvenue sur SMS-GATEWAY</h2>
+            <p>Bonjour <strong>%s %s</strong>,</p>
+            <p>Votre compte manager a été créé avec succès.</p>
 
-            helper.setText(htmlContent, true);
+            <p><strong>Vos informations :</strong></p>
+            <ul>
+              <li><strong>ID Manager :</strong> %s</li>
+              <li><strong>Email :</strong> %s</li>
+              <li><strong>Mot de passe (temporaire) :</strong> %s</li>
+            </ul>
+
+            <p style="color: red;">⚠️ Veuillez modifier ce mot de passe lors de votre première connexion.</p>
+
+            <p style="color: #888; font-size: 12px; text-align: center;">
+              Si vous n'êtes pas à l'origine de cette création, ignorez ce message.
+            </p>
+            <p style="text-align: center; color: #aaa; margin-top: 20px;">— SMS-GATEWAY</p>
+          </div>
+        </div>
+        """.formatted(
+                    manager.getNomManager(),
+                    manager.getPrenomManager(),
+                    manager.getIdManager(),
+                    manager.getEmail(),
+                    rawPassword
+            );
+
+            helper.setText(html, true);
             javaMailSender.send(message);
-        } catch (MessagingException e) {
+        } catch (jakarta.mail.MessagingException e) {
             e.printStackTrace();
         }
     }
+
+
+
 
     /** Envoie au client son ID, son email, son MDP temporaire */
     public void envoyerAccesClient(Client client, String rawPassword) {

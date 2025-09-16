@@ -16,7 +16,6 @@ public final class ManagerMapper {
         dto.setEmail(e.getEmail());
         dto.setNumeroTelephoneManager(e.getNumeroTelephoneManager());
         dto.setRole(e.getRole());
-        dto.setActif(e.isActif());
         // motDePasseManager: WRITE_ONLY
         return dto;
     }

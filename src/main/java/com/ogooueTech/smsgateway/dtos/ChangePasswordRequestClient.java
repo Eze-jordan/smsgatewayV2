@@ -3,7 +3,7 @@ package com.ogooueTech.smsgateway.dtos;
 import jakarta.validation.constraints.NotBlank;
 
 
-public class ChangePasswordRequest {
+public class ChangePasswordRequestClient {
 
     @NotBlank(message = "L'ancien mot de passe est obligatoire")
     private String oldPassword;

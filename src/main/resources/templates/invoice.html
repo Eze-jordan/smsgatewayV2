@@ -6,19 +6,65 @@
     <style>
         @page { size: A4; margin: 24mm 18mm; }
         body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #222; }
-        h1 { font-size: 20px; margin: 0 0 12px; }
+
+        h1 { font-size: 20px; margin: 0; }
+
         .meta { margin-bottom: 18px; }
         .meta div { margin: 2px 0; }
+
         table { width: 100%; border-collapse: collapse; margin-top: 12px; }
         th, td { border: 1px solid #ddd; padding: 8px; }
         th { background: #f2f2f2; text-align: left; }
         .right { text-align: right; }
         .totals td { font-weight: bold; }
-        .footer { margin-top: 24px; font-size: 11px; color: #666; }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            font-size: 11px;
+            color: #555;
+            text-align: center;
+            line-height: 1.4;
+            margin: 0;
+            padding: 10px 0;
+        }
+        .footer hr {
+            margin: 5px auto;
+            border: none;
+            border-top: 1px solid #ccc;
+            width: 90%;
+        }
+
+        .header {
+            width: 100%;
+            overflow: hidden; /* permet de contenir les floats */
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            float: left;       /* le titre à gauche */
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .header .logo {
+            float: right;      /* le logo à droite */
+            max-width: 120px;  /* taille max */
+            height: auto;
+        }
+
     </style>
 </head>
 <body>
-<h1>Facture</h1>
+
+<div class="header">
+    <h1>Facture</h1>
+    <!-- ⚠️ le logo doit être placé dans /src/main/resources/static/logo.png -->
+    <img src="images/logo.png" alt="Logo" class="logo"/>
+
+</div>
 
 <div class="meta">
     <div><strong>Numéro :</strong> <span th:text="${invoiceNumber}">INV-XXX</span></div>
@@ -59,7 +105,20 @@
 </table>
 
 <div class="footer">
-    Facture générée automatiquement — OgooueTech SMS Gateway.
+    <hr/>
+    <p>
+        <strong th:text="${companyName}">OgooueTech S.A.R.L</strong> — SMS Gateway |
+        <span th:text="${companyAddress}">Libreville, Gabon</span>
+    </p>
+    <p>
+        NIF : <span th:text="${companyNif}">123456789</span> |
+        RCCM : <span th:text="${companyRccm}">GA-LBV-2025-B-00001</span>
+    </p>
+    <p>
+        <span th:text="${companyEmail}">contact@ogoouetech.com</span> |
+        <span th:text="${companyPhone}">+241 01 23 45 67</span>
+    </p>
 </div>
+
 </body>
 </html>

@@ -3,10 +3,9 @@ package com.ogooueTech.smsgateway.service;
 import com.ogooueTech.smsgateway.dtos.ManagerDTO;
 import com.ogooueTech.smsgateway.enums.Role;
 import com.ogooueTech.smsgateway.model.Manager;
-import com.ogooueTech.smsgateway.model.Validation;
+
 import com.ogooueTech.smsgateway.repository.ManagerRepository;
 import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -15,9 +14,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @Transactional
@@ -28,9 +25,10 @@ public class ManagerService implements UserDetailsService {
 
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
-
     @Autowired
-    private ValidationService validationService;
+    private com.ogooueTech.smsgateway.service.NotificationService notificationService;
+
+
 
     /* ---------- Méthodes utilitaires de mapping ---------- */
 
@@ -44,7 +42,6 @@ public class ManagerService implements UserDetailsService {
         dto.setEmail(e.getEmail());
         dto.setNumeroTelephoneManager(e.getNumeroTelephoneManager());
         dto.setRole(e.getRole());
-        dto.setActif(e.isActif());
         // ⚠️ motDePasseManager est WRITE_ONLY => jamais renvoyé côté API
         return dto;
     }
@@ -76,7 +73,6 @@ public class ManagerService implements UserDetailsService {
         if (dto.getMotDePasseManager() != null) {
             e.setMotDePasseManager(passwordEncoder.encode(dto.getMotDePasseManager()));
         }
-        if (dto.getActif() != null) e.setActif(dto.getActif());
     }
 
     /* ---------- Métiers principaux ---------- */
@@ -106,13 +102,18 @@ public class ManagerService implements UserDetailsService {
             entity.setIdManager(generateCustomId());
         }
 
+        // Génère et encode un mot de passe aléatoire
+        String rawPassword = generatePassword(10); // 10 caractères par ex.
+        entity.setMotDePasseManager(passwordEncoder.encode(rawPassword));
+
         Manager saved = managerRepository.save(entity);
 
-        // Déclenchement d’un code d’activation
-        validationService.enregister(saved);
+        // ✉️ Envoi des identifiants par email
+        notificationService.envoyerIdentifiantsManager(saved, rawPassword);
 
         return toDto(saved);
     }
+
 
     /* ---------- Génération d’ID custom pour Manager ---------- */
 
@@ -143,6 +144,17 @@ public class ManagerService implements UserDetailsService {
             id = String.format("%06d", next);
         } while (managerRepository.existsById(id)); // boucle si collision improbable
         return id;
+    }
+
+    /* ---------- Génération de mot de passe aléatoire ---------- */
+    private String generatePassword(int length) {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%";
+        StringBuilder sb = new StringBuilder();
+        java.util.Random random = new java.util.Random();
+        for (int i = 0; i < length; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
     }
 
     /* ---------- Lecture des managers ---------- */
@@ -179,23 +191,7 @@ public class ManagerService implements UserDetailsService {
         return toDto(managerRepository.save(e));
     }
 
-    /* ---------- Activation / Désactivation ---------- */
 
-    // Active un Manager
-    public ManagerDTO activate(String id) {
-        Manager e = managerRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Manager introuvable: " + id));
-        e.setActif(true);
-        return toDto(managerRepository.save(e));
-    }
-
-    // Désactive un Manager
-    public ManagerDTO deactivate(String id) {
-        Manager e = managerRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Manager introuvable: " + id));
-        e.setActif(false);
-        return toDto(managerRepository.save(e));
-    }
 
     /* ---------- Suppression ---------- */
 
@@ -206,25 +202,35 @@ public class ManagerService implements UserDetailsService {
         managerRepository.deleteById(id);
     }
 
-    /* ---------- Validation par code ---------- */
-
     /**
-     * Active un Manager via un code de validation
-     * - Vérifie la validité et l’expiration du code
-     * - Active le compte si valide
+     * Permet à un manager de modifier son mot de passe
+     *
+     * @param managerId identifiant du manager
+     * @param oldPassword ancien mot de passe (en clair, fourni par l'utilisateur)
+     * @param newPassword nouveau mot de passe (en clair, à encoder)
      */
-    public void activation(Map<String, String> activation) {
-        Validation validation = validationService.lireEnFonctionDuCode(activation.get("code"));
-        if (Instant.now().isAfter(validation.getExpiration())) {
-            throw new RuntimeException("Votre code a expiré");
+    public void changePassword(String managerId, String oldPassword, String newPassword) {
+        // Récupère le manager
+        Manager manager = managerRepository.findById(managerId)
+                .orElseThrow(() -> new EntityNotFoundException("Manager introuvable: " + managerId));
+
+        // Vérifie l'ancien mot de passe
+        if (!passwordEncoder.matches(oldPassword, manager.getMotDePasseManager())) {
+            throw new IllegalArgumentException("Ancien mot de passe incorrect");
         }
 
-        Manager ManagerActiver = managerRepository.findById(validation.getManager().getIdManager())
-                .orElseThrow(() -> new RuntimeException("Utilisateur inconnu"));
+        // Vérifie que le nouveau mot de passe n’est pas vide
+        if (newPassword == null || newPassword.isBlank()) {
+            throw new IllegalArgumentException("Le nouveau mot de passe ne peut pas être vide");
+        }
 
-        ManagerActiver.setActif(true);
-        managerRepository.save(ManagerActiver);
+        // Encode et sauvegarde le nouveau mot de passe
+        manager.setMotDePasseManager(passwordEncoder.encode(newPassword));
+        managerRepository.save(manager);
     }
+
+
+
 
     /* ---------- Spring Security (authentification) ---------- */
 

@@ -1,5 +1,6 @@
 package com.ogooueTech.smsgateway.controller;
 
+import com.ogooueTech.smsgateway.dtos.FactureDTO;
 import com.ogooueTech.smsgateway.model.Facture;
 import com.ogooueTech.smsgateway.service.FacturationService;
 import com.ogooueTech.smsgateway.service.InvoiceAppService;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -52,16 +54,32 @@ public class InvoiceController {
         return ResponseEntity.ok("Invoice sent by email.");
     }
 
+    /**
+     * 🔹 Récupérer toutes les factures
+     */
+
     @GetMapping
-    @Operation(
-            summary = "Get all invoices",
-            tags = "Invoices"
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "OK"),
-            @ApiResponse(responseCode = "500", description = "Server error")
-    })
-    public ResponseEntity<List<Facture>> getAllFactures() {
-        return ResponseEntity.ok(facturationService.getAllFactures());
+    public ResponseEntity<List<FactureDTO>> getAllFactures() {
+        return ResponseEntity.ok(
+                facturationService.getAllFactures()
+                        .stream()
+                        .map(FactureDTO::from)
+                        .toList()
+        );
     }
+
+    @GetMapping("/client/{clientId}")
+    public ResponseEntity<List<FactureDTO>> getFacturesByClient(@PathVariable String clientId) {
+        return ResponseEntity.ok(facturationService.getFacturesByClient(clientId));
+    }
+
+    @GetMapping("/client/{clientId}/periode")
+    public ResponseEntity<List<FactureDTO>> getFacturesByClientAndDateRange(
+            @PathVariable String clientId,
+            @RequestParam LocalDate start,
+            @RequestParam LocalDate end
+    ) {
+        return ResponseEntity.ok(facturationService.getFacturesByClientAndDateRange(clientId, start, end));
+    }
+
 }

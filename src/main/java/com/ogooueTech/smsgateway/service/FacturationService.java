@@ -1,5 +1,6 @@
 package com.ogooueTech.smsgateway.service;
 
+import com.ogooueTech.smsgateway.dtos.FactureDTO;
 import com.ogooueTech.smsgateway.enums.StatutCompte;
 import com.ogooueTech.smsgateway.enums.StatutExercice;
 import com.ogooueTech.smsgateway.enums.TypeCompte;
@@ -112,4 +113,23 @@ public class FacturationService {
     }
     // Petit DTO de résumé (mets-le dans un fichier séparé si tu préfères)
     public record BillingRunResult(int generated, int skippedZero, int skippedDuplicate, int skippedMissingPrice) {}
+
+    @Transactional(readOnly = true)
+    public List<FactureDTO> getFacturesByClient(String clientId) {
+        return factureRepository.findByClient_Idclients(clientId)
+                .stream()
+                .map(FactureDTO::from)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<FactureDTO> getFacturesByClientAndDateRange(String clientId, LocalDate start, LocalDate end) {
+        return factureRepository.findByClient_IdclientsAndDateDebutGreaterThanEqualAndDateFinLessThanEqual(
+                        clientId, start, end
+                ).stream()
+                .map(FactureDTO::from)
+                .toList();
+    }
+
+
 }

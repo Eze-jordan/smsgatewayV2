@@ -236,6 +236,69 @@ public class NotificationService {
         nf.setMaximumFractionDigits(0);
         return nf.format(v);
     }
+    /** Notifie un client de la suspension de son compte */
+    public void envoyerSuspensionClient(Client client) {
+        try {
+            MimeMessage message = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom("noreply@solutech-one.com");
+            helper.setTo(client.getEmail());
+            helper.setSubject("⚠️ Compte suspendu — SMS-GATEWAY");
+
+            String html = """
+            <div style="font-family: Arial, sans-serif; background-color: #ffecec; padding: 30px;">
+              <div style="max-width: 600px; margin: auto; background: white; padding: 25px; border-radius: 8px; border: 1px solid #e74c3c;">
+                <h2 style="color:#e74c3c; text-align:center;">Votre compte a été suspendu</h2>
+                <p>Bonjour <strong>%s</strong>,</p>
+                <p>Nous vous informons que votre compte <strong>ID : %s</strong> a été <span style="color:#e74c3c;">suspendu</span>.</p>
+                <p>Vous ne pouvez plus envoyer de SMS ni accéder à la plateforme jusqu'à résolution du problème.</p>
+                <p>👉 Veuillez contacter notre support pour plus d’informations.</p>
+                <p style="text-align:center; color:#999; font-size:12px; margin-top:20px;">— SMS-GATEWAY</p>
+              </div>
+            </div>
+            """.formatted(
+                    client.getRaisonSociale() != null ? client.getRaisonSociale() : "Client",
+                    client.getIdclients()
+            );
+
+            helper.setText(html, true);
+            javaMailSender.send(message);
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /** Notifie un client de la réactivation de son compte */
+    public void envoyerReactivationClient(Client client) {
+        try {
+            MimeMessage message = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom("noreply@solutech-one.com");
+            helper.setTo(client.getEmail());
+            helper.setSubject("✅ Compte réactivé — SMS-GATEWAY");
+
+            String html = """
+            <div style="font-family: Arial, sans-serif; background-color: #e6f9ec; padding: 30px;">
+              <div style="max-width: 600px; margin: auto; background: white; padding: 25px; border-radius: 8px; border: 1px solid #27ae60;">
+                <h2 style="color:#27ae60; text-align:center;">Votre compte a été réactivé</h2>
+                <p>Bonjour <strong>%s</strong>,</p>
+                <p>Bonne nouvelle 🎉 ! Votre compte <strong>ID : %s</strong> a été <span style="color:#27ae60;">réactivé</span>.</p>
+                <p>Vous pouvez désormais reprendre vos envois SMS et l’utilisation complète de la plateforme.</p>
+                <p>Merci de votre confiance.</p>
+                <p style="text-align:center; color:#999; font-size:12px; margin-top:20px;">— SMS-GATEWAY</p>
+              </div>
+            </div>
+            """.formatted(
+                    client.getRaisonSociale() != null ? client.getRaisonSociale() : "Client",
+                    client.getIdclients()
+            );
+
+            helper.setText(html, true);
+            javaMailSender.send(message);
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        }
+    }
 
 
 }

@@ -3,6 +3,7 @@ package com.ogooueTech.smsgateway.service;
 import com.ogooueTech.smsgateway.dtos.SmsMuldesResponse;
 import com.ogooueTech.smsgateway.enums.SmsStatus;
 import com.ogooueTech.smsgateway.enums.SmsType;
+import com.ogooueTech.smsgateway.enums.StatutCompte;
 import com.ogooueTech.smsgateway.model.Client;
 import com.ogooueTech.smsgateway.model.SmsMessage;
 import com.ogooueTech.smsgateway.model.SmsRecipient;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -43,6 +45,10 @@ public class SmsService {
         if (clientId != null && !client.getIdclients().equals(clientId)) {
             throw new IllegalArgumentException("Clé API non associée à ce client");
         }
+        if (client.getStatutCompte() == StatutCompte.SUSPENDU) {
+            throw new IllegalArgumentException("Compte suspendu. Aucune action n'est autorisée.");
+        }
+
         return client;
     }
 
@@ -84,25 +90,24 @@ public class SmsService {
 
     // MULDESP
     public SmsMessage createMuldesp(String clientId, String emetteur, List<String> numeros, String corps,
-                                    LocalDateTime dateDebut, Integer nbParJour,
-                                    Integer intervalleMinutes, LocalDateTime dateFin) {
+                                    LocalDate dateDebut, Integer nbParJour,
+                                    Integer intervalleMinutes, LocalDate dateFin) {
         validateBody(corps);
-        if (dateDebut == null || nbParJour == null || intervalleMinutes == null || dateFin == null)
+        if (dateDebut == null || dateFin == null || nbParJour == null || intervalleMinutes == null)
             throw new IllegalArgumentException("Paramètres de planification manquants");
         if (dateDebut.isAfter(dateFin)) throw new IllegalArgumentException("dateDebut > dateFin");
 
         SmsMessage sms = baseMulti(clientId, emetteur, corps, SmsType.MULDESP);
         sms.setDateDebutEnvoi(dateDebut);
-        sms.setProchaineHeureEnvoi(dateDebut);
+        sms.setDateFinEnvoi(dateFin);
         sms.setNbParJour(nbParJour);
         sms.setIntervalleMinutes(intervalleMinutes);
-        sms.setDateFinEnvoi(dateFin);
 
-        // ✅ parent d'abord (insert + flush), puis enfants
         SmsMessage saved = smsRepo.saveAndFlush(sms);
         persistRecipients(saved, numeros);
         return saved;
     }
+
 
     private SmsMessage baseMulti(String clientId, String emetteur, String corps, SmsType type) {
         SmsMessage sms = new SmsMessage();
@@ -179,22 +184,29 @@ public class SmsService {
     public void tickPlanification() {
         var planifies = smsRepo.findByTypeAndStatut(SmsType.MULDESP, SmsStatus.EN_ATTENTE);
         var now = LocalDateTime.now();
+        var today = now.toLocalDate();
+
         for (SmsMessage sms : planifies) {
-            if (sms.getProchaineHeureEnvoi() == null || now.isBefore(sms.getProchaineHeureEnvoi())) continue;
-            if (sms.getDateFinEnvoi() != null && now.isAfter(sms.getDateFinEnvoi())) {
-                sms.setStatut(SmsStatus.ENVOYE);
-                smsRepo.save(sms);
+            // Vérifie si la date du jour est dans l’intervalle de planification
+            if (sms.getDateDebutEnvoi() == null || sms.getDateFinEnvoi() == null) continue;
+            if (today.isBefore(sms.getDateDebutEnvoi()) || today.isAfter(sms.getDateFinEnvoi())) {
+                continue; // pas encore commencé ou déjà terminé
+            }
+
+            // Vérifie combien ont déjà été envoyés
+            int deja = sms.getNbDejaEnvoye() == null ? 0 : sms.getNbDejaEnvoye();
+            int quota = sms.getNbParJour() == null ? 1 : sms.getNbParJour();
+
+            if (deja >= quota) {
+                // Le quota du jour est atteint, on attend demain
                 continue;
             }
-            int quota = Math.max(1, sms.getNbParJour() == null ? 1 : sms.getNbParJour());
-            int interval = Math.max(1, sms.getIntervalleMinutes() == null ? 1 : sms.getIntervalleMinutes());
 
-            // 🔁 ciblé + pagination
+            // Récupère les destinataires restants
             var pageRecipients = recRepo.findBySms_RefAndStatut(
-                    sms.getRef(), SmsStatus.EN_ATTENTE, PageRequest.of(0, quota)
+                    sms.getRef(), SmsStatus.EN_ATTENTE, PageRequest.of(0, quota - deja)
             ).getContent();
 
-            // ===== AJOUT: gestion solde PRE/POST-payé =====
             if (pageRecipients.isEmpty()) {
                 sms.setStatut(SmsStatus.ENVOYE);
                 smsRepo.save(sms);
@@ -206,41 +218,43 @@ public class SmsService {
 
             int toSend = pageRecipients.size();
 
+            // Vérifie solde PREPAYE
             if (isPrepaye(client)) {
                 int solde = getSoldeNet(client);
                 if (solde <= 0) {
-                    // pas de solde => on reprogramme sans envoyer
-                    sms.setProchaineHeureEnvoi(now.plusMinutes(interval));
-                    smsRepo.save(sms);
+                    // pas de solde → on arrête pour aujourd’hui
                     continue;
                 }
-                // si solde < à envoyer, on tronque
                 if (solde < toSend) {
                     toSend = solde;
                     pageRecipients = pageRecipients.subList(0, toSend);
                 }
-                // débiter le nombre réellement envoyé
                 debitPrepayeOuFail(client, toSend);
             }
 
+            // Envoi des SMS restants
             for (var r : pageRecipients) {
                 envoyerUnitaire(r.getNumero(), sms, r);
             }
 
+            // Postpayé : incrémente consommation
             if (isPostpaye(client)) {
                 creditPostpaye(client, toSend);
             }
 
-            boolean reste = recRepo.existsBySms_RefAndStatut(sms.getRef(), SmsStatus.EN_ATTENTE);
+            // Mets à jour le compteur
+            sms.setNbDejaEnvoye(deja + toSend);
 
-            if (!reste) {
+            // Vérifie si tout est envoyé
+            boolean reste = recRepo.existsBySms_RefAndStatut(sms.getRef(), SmsStatus.EN_ATTENTE);
+            if (!reste && today.isAfter(sms.getDateFinEnvoi())) {
                 sms.setStatut(SmsStatus.ENVOYE);
-            } else {
-                sms.setProchaineHeureEnvoi(now.plusMinutes(interval));
             }
+
             smsRepo.save(sms);
         }
     }
+
 
     /* ---------- Mock passerelle ---------- */
     private void envoyerUnitaire(String numero, SmsMessage sms) {

@@ -114,5 +114,27 @@ public class ClientController {
     public ResponseEntity<SoldeNetResponse> getSoldeNetById(@PathVariable String id) {
         return ResponseEntity.ok(clientService.getSoldeNetDtoByClientId(id));
     }
+    // ✅ Suspendre un client
+    @PostMapping("/{clientId}/suspend")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Suspendre un client", description = "Bloque toutes les actions de ce client")
+    public ResponseEntity<?> suspendClient(@PathVariable String clientId) {
+        clientService.suspendClient(clientId);
+        return ResponseEntity.ok(Map.of(
+                "message", "Client suspendu avec succès",
+                "clientId", clientId
+        ));
+    }
 
+    // ✅ Réactiver un client
+    @PostMapping("/{clientId}/reactivate")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Réactiver un client", description = "Permet à un client suspendu de redevenir actif")
+    public ResponseEntity<?> reactivateClient(@PathVariable String clientId) {
+        clientService.reactivateClient(clientId);
+        return ResponseEntity.ok(Map.of(
+                "message", "Client réactivé avec succès",
+                "clientId", clientId
+        ));
+    }
 }

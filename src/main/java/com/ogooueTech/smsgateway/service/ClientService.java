@@ -279,11 +279,40 @@ public class ClientService {
                 c.getTypeCompte() != null ? c.getTypeCompte().name() : null, v);
     }
 
-    @jakarta.transaction.Transactional(Transactional.TxType.SUPPORTS)
-    public int getSoldeNetByClientId(String clientId) {
-        Client c = clientRepository.findById(clientId)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Client introuvable: " + clientId));
-        return c.getSoldeNet() == null ? 0 : c.getSoldeNet();
+    /**
+     * Suspend un client : il ne pourra plus rien faire (envoyer des SMS, etc.)
+     * @param clientId identifiant du client à suspendre
+     */
+    public void suspendClient(String clientId) {
+        Client client = clientRepository.findById(clientId)
+                .orElseThrow(() -> new EntityNotFoundException("Client introuvable: " + clientId));
+
+        if (client.getStatutCompte() == StatutCompte.SUSPENDU) {
+            throw new IllegalArgumentException("Le client est déjà suspendu");
+        }
+
+        client.setStatutCompte(StatutCompte.SUSPENDU);
+        clientRepository.save(client);
+
+        notificationService.envoyerSuspensionClient(client);
     }
+    /**
+     * Réactive un client suspendu.
+     * @param clientId identifiant du client
+     */
+    public void reactivateClient(String clientId) {
+        Client client = clientRepository.findById(clientId)
+                .orElseThrow(() -> new EntityNotFoundException("Client introuvable: " + clientId));
+
+        if (client.getStatutCompte() == StatutCompte.ACTIF) {
+            throw new IllegalArgumentException("Le client est déjà actif");
+        }
+
+        client.setStatutCompte(StatutCompte.ACTIF);
+        clientRepository.save(client);
+
+        notificationService.envoyerReactivationClient(client);
+    }
+
 
 }

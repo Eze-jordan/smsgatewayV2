@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -48,6 +49,7 @@ public class ClientsContactsController {
 
     /* ---------- List ALL contacts ---------- */
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "List all contacts", tags = "Contacts")
     public ResponseEntity<List<ClientsContacts>> listAll() {
         return ResponseEntity.ok(service.listAll());
@@ -110,6 +112,34 @@ public class ClientsContactsController {
         return ResponseEntity.ok(report);
     }
 
+    /* ---------- Search contacts ---------- */
+    @GetMapping("/search")
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    @Operation(summary = "Search contacts by name or number", tags = "Contacts")
+    public ResponseEntity<List<ClientsContacts>> search(
+            @RequestParam("q") String query
+    ) {
+        return ResponseEntity.ok(service.search(query));
+    }
+
+    @GetMapping("/client/{clientId}/search")
+    @Operation(summary = "Search contacts of a client by name or number", tags = "Contacts")
+    public ResponseEntity<List<ClientsContacts>> searchByClient(
+            @PathVariable String clientId,
+            @RequestParam("q") String query
+    ) {
+        return ResponseEntity.ok(service.searchByClient(clientId, query));
+    }
+
+    /* ---------- List contacts by client ---------- */
+    @GetMapping("/client/{clientId}")
+    @Operation(summary = "List contacts by client", tags = "Contacts")
+    public ResponseEntity<List<ClientsContacts>> listByClient(@PathVariable("clientId") String clientId) {
+        return ResponseEntity.ok(service.listByClient(clientId));
+    }
+
+
+
     /* ===================== DTOs ===================== */
 
     public record CreateContactRequest(
@@ -127,4 +157,6 @@ public class ClientsContactsController {
             @JsonAlias({"target_group_id", "targetGroup", "groupId"})
             String targetGroupId
     ) {}
+
+
 }

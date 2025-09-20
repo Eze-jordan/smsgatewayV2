@@ -71,6 +71,14 @@ public class ClientsGroupsController {
         service.delete(id);
         return ResponseEntity.noContent().build();
     }
+    @GetMapping("/client/{clientId}/search")
+    @Operation(summary = "Search groups by keyword for a client", tags = "Groups")
+    public ResponseEntity<List<ClientsGroups>> searchGroups(
+            @PathVariable String clientId,
+            @RequestParam String keyword
+    ) {
+        return ResponseEntity.ok(service.searchByClient(clientId, keyword));
+    }
 
     // ---------- Payloads (records) ----------
     public record CreateGroupRequest(

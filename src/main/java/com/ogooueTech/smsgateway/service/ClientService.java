@@ -313,6 +313,16 @@ public class ClientService {
 
         notificationService.envoyerReactivationClient(client);
     }
+    @Transactional(Transactional.TxType.SUPPORTS)
+    public List<ClientDTO> searchByName(String name) {
+        if (name == null || name.isBlank()) {
+            return List.of();
+        }
+        return clientRepository.findByRaisonSocialeContainingIgnoreCase(name)
+                .stream()
+                .map(ClientMapper::toDto)
+                .toList();
+    }
 
 
 }

@@ -6,6 +6,6 @@ public enum SmsStatus {
     EN_COURS,
     ENVOYE,
     PARTIEL,
-    ECHEC,
+    ERREUR,
     ANNULE
 }

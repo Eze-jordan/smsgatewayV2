@@ -137,4 +137,10 @@ public class ClientController {
                 "clientId", clientId
         ));
     }
+    @GetMapping("/search")
+    @Operation(summary = "Search clients by name", tags = "Clients")
+    public ResponseEntity<List<ClientDTO>> search(@RequestParam("q") String query) {
+        return ResponseEntity.ok(clientService.searchByName(query));
+    }
+
 }

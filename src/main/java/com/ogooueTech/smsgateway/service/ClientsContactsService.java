@@ -23,6 +23,12 @@ public interface ClientsContactsService {
 
     ImportReportxls importCsvToGroup(String groupId, InputStream csvStream, Charset charset);
 
+    List<ClientsContacts> search(String query);
+    List<ClientsContacts> listByClient(String clientId);
+
+    List<ClientsContacts> searchByClient(String clientId, String query);
+
+
     // petit POJO de rapport
     class ImportReport {
         public final String groupId;

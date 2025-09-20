@@ -11,5 +11,7 @@ public interface ClientsGroupsService {
     ClientsGroups patch(String id, String nom, String description);
     void delete(String id);
     List<ClientsGroups> listAll();
+    List<ClientsGroups> searchByClient(String clientId, String keyword);
+
 
 }

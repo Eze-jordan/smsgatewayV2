@@ -11,4 +11,17 @@ public interface ClientsContactsRepository extends JpaRepository<ClientsContacts
 
     // ✅ désormais on vérifie par client dénormalisé
     boolean existsByClientIdAndContactNumberIgnoreCase(String clientId, String contactNumber);
+
+    List<ClientsContacts> findByContactNumberContainingIgnoreCaseOrContactNameContainingIgnoreCase(
+            String number,
+            String name
+    );
+
+    List<ClientsContacts> findAllByClientIdOrderByCreatedAtDesc(String clientId);
+
+    List<ClientsContacts> findByClientIdAndContactNumberContainingIgnoreCaseOrClientIdAndContactNameContainingIgnoreCase(
+            String clientId1, String numberKeyword,
+            String clientId2, String nameKeyword
+    );
+
 }

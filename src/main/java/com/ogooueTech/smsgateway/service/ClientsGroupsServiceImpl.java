@@ -82,6 +82,16 @@ public class ClientsGroupsServiceImpl implements ClientsGroupsService {
                 .orElseThrow(() -> new NotFoundException("Groupe introuvable: " + id));
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<ClientsGroups> searchByClient(String clientId, String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return List.of();
+        }
+        return groupsRepo.findByClient_IdclientsAndNomGroupeContainingIgnoreCase(clientId, keyword.trim());
+    }
+
+
     /**
      * Mise à jour (partielle) d’un groupe
      */

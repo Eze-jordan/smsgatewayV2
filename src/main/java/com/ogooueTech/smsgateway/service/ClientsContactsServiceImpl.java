@@ -309,4 +309,28 @@ public class ClientsContactsServiceImpl implements ClientsContactsService {
         return v != null ? v.trim() : "";
     }
 
+    public List<ClientsContacts> search(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return List.of();
+        }
+        return contactRepo.findByContactNumberContainingIgnoreCaseOrContactNameContainingIgnoreCase(keyword, keyword);
+    }
+
+    public List<ClientsContacts> searchByClient(String clientId, String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return List.of();
+        }
+        return contactRepo
+                .findByClientIdAndContactNumberContainingIgnoreCaseOrClientIdAndContactNameContainingIgnoreCase(
+                        clientId, keyword, clientId, keyword
+                );
+    }
+
+    @Transactional(readOnly = true)
+    public List<ClientsContacts> listByClient(String clientId) {
+        return contactRepo.findAllByClientIdOrderByCreatedAtDesc(clientId);
+    }
+
+
+
 }

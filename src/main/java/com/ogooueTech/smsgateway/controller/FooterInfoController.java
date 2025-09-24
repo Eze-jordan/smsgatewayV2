@@ -3,10 +3,12 @@ package com.ogooueTech.smsgateway.controller;
 import com.ogooueTech.smsgateway.model.FooterInfo;
 import com.ogooueTech.smsgateway.service.FooterInfoService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/footer")
+@PreAuthorize("hasAnyRole('ADMIN')")
 public class FooterInfoController {
 
     private final FooterInfoService service;

@@ -300,5 +300,102 @@ public class NotificationService {
         }
     }
 
+    /** 🔔 Mail : création d'une demande de crédit */
+    public void envoyerDemandeCredit(Client client, int quantite) {
+        try {
+            MimeMessage message = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(from);
+            helper.setTo(client.getEmail());
+            helper.setSubject("Demande de crédit enregistrée — SMS-GATEWAY");
+
+            String html = """
+            <div style="font-family: Arial, sans-serif; background:#f9f9f9; padding:24px">
+              <div style="max-width:600px; margin:auto; background:#fff; border-radius:8px; padding:24px">
+                <h2 style="color:#2c3e50">Demande de crédit reçue ✅</h2>
+                <p>Bonjour <strong>%s</strong>,</p>
+                <p>Votre demande de crédit de <strong>%d SMS</strong> a bien été enregistrée et est en attente de validation.</p>
+                <p>👉 Vous serez notifié dès qu’elle sera validée ou rejetée.</p>
+                <p style="color:#999; font-size:12px; margin-top:16px">— SMS-GATEWAY</p>
+              </div>
+            </div>
+            """.formatted(
+                    client.getRaisonSociale() != null ? client.getRaisonSociale() : "Client",
+                    quantite
+            );
+
+            helper.setText(html, true);
+            javaMailSender.send(message);
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /** 🔔 Mail : approbation d'une demande de crédit */
+    public void envoyerCreditApprouve(Client client, int quantite, int nouveauSolde) {
+        try {
+            MimeMessage message = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(from);
+            helper.setTo(client.getEmail());
+            helper.setSubject("Crédit validé — SMS-GATEWAY");
+
+            String html = """
+            <div style="font-family: Arial, sans-serif; background:#e6f9ec; padding:24px">
+              <div style="max-width:600px; margin:auto; background:#fff; border-radius:8px; padding:24px">
+                <h2 style="color:#27ae60">Crédit validé ✅</h2>
+                <p>Bonjour <strong>%s</strong>,</p>
+                <p>Votre demande de <strong>%d SMS</strong> a été approuvée.</p>
+                <p>📌 Nouveau solde : <strong>%d SMS</strong></p>
+                <p>Merci pour votre confiance.</p>
+                <p style="color:#999; font-size:12px; margin-top:16px">— SMS-GATEWAY</p>
+              </div>
+            </div>
+            """.formatted(
+                    client.getRaisonSociale() != null ? client.getRaisonSociale() : "Client",
+                    quantite,
+                    nouveauSolde
+            );
+
+            helper.setText(html, true);
+            javaMailSender.send(message);
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /** 🔔 Mail : rejet d'une demande de crédit */
+    public void envoyerCreditRejete(Client client, int quantite, String raison) {
+        try {
+            MimeMessage message = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(from);
+            helper.setTo(client.getEmail());
+            helper.setSubject("Demande de crédit rejetée — SMS-GATEWAY");
+
+            String html = """
+            <div style="font-family: Arial, sans-serif; background:#ffecec; padding:24px">
+              <div style="max-width:600px; margin:auto; background:#fff; border-radius:8px; padding:24px; border:1px solid #e74c3c">
+                <h2 style="color:#e74c3c">Demande rejetée ❌</h2>
+                <p>Bonjour <strong>%s</strong>,</p>
+                <p>Votre demande de <strong>%d SMS</strong> a été rejetée.</p>
+                <p>Motif : <em>%s</em></p>
+                <p>👉 Vous pouvez contacter notre support si besoin.</p>
+                <p style="color:#999; font-size:12px; margin-top:16px">— SMS-GATEWAY</p>
+              </div>
+            </div>
+            """.formatted(
+                    client.getRaisonSociale() != null ? client.getRaisonSociale() : "Client",
+                    quantite,
+                    raison
+            );
+
+            helper.setText(html, true);
+            javaMailSender.send(message);
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        }
+    }
+
 
 }

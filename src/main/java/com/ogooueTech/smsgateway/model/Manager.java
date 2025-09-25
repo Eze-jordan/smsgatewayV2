@@ -2,6 +2,7 @@ package com.ogooueTech.smsgateway.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ogooueTech.smsgateway.enums.Role;
+import com.ogooueTech.smsgateway.enums.StatutCompte;
 import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -24,6 +25,9 @@ public class Manager  implements UserDetails {
     private String numeroTelephoneManager;
     @Enumerated(EnumType.STRING)
     private Role role;
+    @Enumerated(EnumType.STRING)
+    private StatutCompte statutCompte; // ACTIF ou SUSPENDU
+
 
 
 
@@ -89,8 +93,35 @@ public class Manager  implements UserDetails {
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + this.role));
     }
+    @Override
+    public boolean isAccountNonExpired() {
+        return true; // tu ne gères pas l’expiration de compte
+    }
 
+    @Override
+    public boolean isAccountNonLocked() {
+        // Si suspendu, compte verrouillé
+        return this.statutCompte != StatutCompte.SUSPENDU;
+    }
 
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true; // tu ne gères pas l’expiration de credentials
+    }
+
+    @Override
+    public boolean isEnabled() {
+        // Actif uniquement si statut = ACTIF
+        return this.statutCompte == StatutCompte.ACTIF;
+    }
+
+    public StatutCompte getStatutCompte() {
+        return statutCompte;
+    }
+
+    public void setStatutCompte(StatutCompte statutCompte) {
+        this.statutCompte = statutCompte;
+    }
 
     @Override
     public String getPassword() {

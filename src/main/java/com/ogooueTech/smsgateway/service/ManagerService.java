@@ -2,6 +2,7 @@ package com.ogooueTech.smsgateway.service;
 
 import com.ogooueTech.smsgateway.dtos.ManagerDTO;
 import com.ogooueTech.smsgateway.enums.Role;
+import com.ogooueTech.smsgateway.enums.StatutCompte;
 import com.ogooueTech.smsgateway.model.Manager;
 
 import com.ogooueTech.smsgateway.repository.ManagerRepository;
@@ -243,5 +244,72 @@ public class ManagerService implements UserDetailsService {
                 "Aucun utilisateur ne correspond à cet identifiant"
         ));
     }
+
+    /**
+     * Suspend un manager (il ne peut plus se connecter ni agir)
+     */
+    public void suspendManager(String managerId) {
+        Manager manager = managerRepository.findById(managerId)
+                .orElseThrow(() -> new EntityNotFoundException("Manager introuvable: " + managerId));
+
+        if (manager.getStatutCompte() == StatutCompte.SUSPENDU) {
+            throw new IllegalArgumentException("Le manager est déjà suspendu");
+        }
+
+        manager.setStatutCompte(StatutCompte.SUSPENDU);
+        managerRepository.save(manager);
+
+        notificationService.envoyerSuspensionManager(manager);
+    }
+
+    /**
+     * Réactive un manager suspendu
+     */
+    public void reactivateManager(String managerId) {
+        Manager manager = managerRepository.findById(managerId)
+                .orElseThrow(() -> new EntityNotFoundException("Manager introuvable: " + managerId));
+
+        if (manager.getStatutCompte() == StatutCompte.ACTIF) {
+            throw new IllegalArgumentException("Le manager est déjà actif");
+        }
+
+        manager.setStatutCompte(StatutCompte.ACTIF);
+        managerRepository.save(manager);
+
+        notificationService.envoyerReactivationManager(manager);
+    }
+
+    /**
+     * Met à jour complètement les infos d’un manager (sauf ID et mot de passe si non fourni)
+     */
+    public ManagerDTO update(String id, ManagerDTO dto) {
+        Manager manager = managerRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Manager introuvable: " + id));
+
+        // Unicité email
+        if (dto.getEmail() != null && !dto.getEmail().equalsIgnoreCase(manager.getEmail())
+                && managerRepository.existsByEmail(dto.getEmail())) {
+            throw new IllegalArgumentException("Un manager avec cet email existe déjà");
+        }
+
+        updateEntityFromDto(dto, manager);
+        return toDto(managerRepository.save(manager));
+    }
+
+    /**
+     * Archive un manager (soft delete)
+     */
+    public void archiveManager(String managerId) {
+        Manager manager = managerRepository.findById(managerId)
+                .orElseThrow(() -> new EntityNotFoundException("Manager introuvable: " + managerId));
+
+        if (manager.getStatutCompte() == StatutCompte.ARCHIVE) {
+            throw new IllegalArgumentException("Le manager est déjà archivé");
+        }
+
+        manager.setStatutCompte(StatutCompte.ARCHIVE);
+        managerRepository.save(manager);
+    }
+
 
 }

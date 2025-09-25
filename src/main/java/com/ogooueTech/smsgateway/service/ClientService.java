@@ -11,7 +11,9 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import java.io.ByteArrayOutputStream;
 import java.util.List;
 
 @Service
@@ -325,4 +327,51 @@ public class ClientService {
     }
 
 
+    @Transactional(Transactional.TxType.SUPPORTS)
+    public byte[] exportClientsToExcel() {
+        List<Client> clients = clientRepository.findAll();
+
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("Clients");
+
+            // 🎨 Style d’entête
+            CellStyle headerStyle = workbook.createCellStyle();
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            headerStyle.setFont(headerFont);
+
+            // Ligne d’entête
+            Row header = sheet.createRow(0);
+            String[] columns = {"ID Client", "Raison sociale", "Email", "Téléphone", "Ville", "Statut", "Type Compte", "Solde Net"};
+            for (int i = 0; i < columns.length; i++) {
+                Cell cell = header.createCell(i);
+                cell.setCellValue(columns[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            // Données
+            int rowIdx = 1;
+            for (Client c : clients) {
+                Row row = sheet.createRow(rowIdx++);
+                row.createCell(0).setCellValue(c.getIdclients());
+                row.createCell(1).setCellValue(c.getRaisonSociale() != null ? c.getRaisonSociale() : "");
+                row.createCell(2).setCellValue(c.getEmail() != null ? c.getEmail() : "");
+                row.createCell(3).setCellValue(c.getTelephone() != null ? c.getTelephone() : "");
+                row.createCell(4).setCellValue(c.getVille() != null ? c.getVille() : "");
+                row.createCell(5).setCellValue(c.getStatutCompte() != null ? c.getStatutCompte().name() : "");
+                row.createCell(6).setCellValue(c.getTypeCompte() != null ? c.getTypeCompte().name() : "");
+                row.createCell(7).setCellValue(c.getSoldeNet() != null ? c.getSoldeNet() : 0);
+            }
+
+            // Ajuste la largeur des colonnes
+            for (int i = 0; i < columns.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            workbook.write(out);
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new IllegalStateException("Erreur export Excel: " + e.getMessage(), e);
+        }
+    }
 }

@@ -397,5 +397,71 @@ public class NotificationService {
         }
     }
 
+    /** 🔔 Mail : suspension d’un Manager */
+    public void envoyerSuspensionManager(Manager manager) {
+        try {
+            MimeMessage message = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(from);
+            helper.setTo(manager.getEmail());
+            helper.setSubject("⚠️ Compte Manager suspendu — SMS-GATEWAY");
+
+            String html = """
+            <div style="font-family: Arial, sans-serif; background-color:#ffecec; padding:30px">
+              <div style="max-width:600px;margin:auto;background:#fff;padding:25px;border-radius:8px;border:1px solid #e74c3c">
+                <h2 style="color:#e74c3c; text-align:center;">Compte Manager suspendu</h2>
+                <p>Bonjour <strong>%s %s</strong>,</p>
+                <p>Votre compte <strong>ID : %s</strong> a été <span style="color:#e74c3c;">suspendu</span>.</p>
+                <p>Vous n’avez plus accès à la plateforme jusqu’à résolution du problème.</p>
+                <p>👉 Veuillez contacter l’administrateur ou le support pour plus d’informations.</p>
+                <p style="text-align:center;color:#999;font-size:12px;margin-top:20px">— SMS-GATEWAY</p>
+              </div>
+            </div>
+            """.formatted(
+                    manager.getNomManager(),
+                    manager.getPrenomManager(),
+                    manager.getIdManager()
+            );
+
+            helper.setText(html, true);
+            javaMailSender.send(message);
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /** 🔔 Mail : réactivation d’un Manager */
+    public void envoyerReactivationManager(Manager manager) {
+        try {
+            MimeMessage message = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(from);
+            helper.setTo(manager.getEmail());
+            helper.setSubject("✅ Compte Manager réactivé — SMS-GATEWAY");
+
+            String html = """
+            <div style="font-family: Arial, sans-serif; background-color:#e6f9ec; padding:30px">
+              <div style="max-width:600px;margin:auto;background:#fff;padding:25px;border-radius:8px;border:1px solid #27ae60">
+                <h2 style="color:#27ae60; text-align:center;">Compte Manager réactivé</h2>
+                <p>Bonjour <strong>%s %s</strong>,</p>
+                <p>Bonne nouvelle 🎉 ! Votre compte <strong>ID : %s</strong> a été <span style="color:#27ae60;">réactivé</span>.</p>
+                <p>Vous pouvez à nouveau accéder à la plateforme et gérer vos opérations.</p>
+                <p>Merci de votre collaboration.</p>
+                <p style="text-align:center;color:#999;font-size:12px;margin-top:20px">— SMS-GATEWAY</p>
+              </div>
+            </div>
+            """.formatted(
+                    manager.getNomManager(),
+                    manager.getPrenomManager(),
+                    manager.getIdManager()
+            );
+
+            helper.setText(html, true);
+            javaMailSender.send(message);
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        }
+    }
+
 
 }

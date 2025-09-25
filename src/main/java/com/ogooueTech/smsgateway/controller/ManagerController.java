@@ -77,9 +77,36 @@ public class ManagerController {
 
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN')")
     @Operation(summary = "Delete a manager by ID", tags = "Managers")
     public ResponseEntity<Void> delete(@PathVariable String id) {
         managerService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+    /** ⏸ Suspendre un manager */
+    @PutMapping("/{id}/suspend")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN')")
+    @Operation(summary = "Suspendre un manager")
+    public ResponseEntity<Void> suspend(@PathVariable String id) {
+        managerService.suspendManager(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** ✅ Réactiver un manager */
+    @PutMapping("/{id}/reactivate")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN')")
+    @Operation(summary = "Réactiver un manager")
+    public ResponseEntity<Void> reactivate(@PathVariable String id) {
+        managerService.reactivateManager(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** 🗄 Archiver un manager */
+    @PutMapping("/{id}/archive")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN')")
+    @Operation(summary = "Archiver un manager (soft delete)")
+    public ResponseEntity<Void> archive(@PathVariable String id) {
+        managerService.archiveManager(id);
         return ResponseEntity.noContent().build();
     }
 }

@@ -138,9 +138,23 @@ public class ClientController {
         ));
     }
     @GetMapping("/search")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Search clients by name", tags = "Clients")
     public ResponseEntity<List<ClientDTO>> search(@RequestParam("q") String query) {
         return ResponseEntity.ok(clientService.searchByName(query));
     }
+
+    @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Search clients by name", tags = "Clients")
+    public ResponseEntity<byte[]> exportClientsExcel() {
+        byte[] excelFile = clientService.exportClientsToExcel();
+
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=clients.xlsx")
+                .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                .body(excelFile);
+    }
+
 
 }

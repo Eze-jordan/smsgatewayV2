@@ -146,7 +146,7 @@ public class ClientController {
 
     @GetMapping("/export/excel")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Search clients by name", tags = "Clients")
+    @Operation(summary = "export clients", tags = "Clients")
     public ResponseEntity<byte[]> exportClientsExcel() {
         byte[] excelFile = clientService.exportClientsToExcel();
 

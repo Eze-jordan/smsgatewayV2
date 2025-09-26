@@ -34,7 +34,8 @@ public class CustomUserDetailsService implements UserDetailsService {
                     manager.getAuthorities(),
                     manager.getNomManager(),
                     manager.getRole().name(),
-                    false // ✅ pas d’abonnement pour Utilisateur
+                    false,// ✅ pas d’abonnement pour Utilisateur
+                    manager.getStatutCompte().name()
             );
         }
 
@@ -47,7 +48,8 @@ public class CustomUserDetailsService implements UserDetailsService {
                     client.getAuthorities(),
                     client.getRaisonSociale(),
                     client.getRole().name(),
-                    false // ✅ pas d’abonnement pour Utilisateur
+                    false,// ✅ pas d’abonnement pour Utilisateur
+                    client.getStatutCompte().name()
             );
         }
 

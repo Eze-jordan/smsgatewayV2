@@ -14,6 +14,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationAdapter;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 import java.util.Map;
@@ -44,6 +46,7 @@ public class ManagerService implements UserDetailsService {
         dto.setEmail(e.getEmail());
         dto.setNumeroTelephoneManager(e.getNumeroTelephoneManager());
         dto.setRole(e.getRole());
+        dto.setStatutCompte(e.getStatutCompte());
         // ⚠️ motDePasseManager est WRITE_ONLY => jamais renvoyé côté API
         return dto;
     }
@@ -57,6 +60,7 @@ public class ManagerService implements UserDetailsService {
         e.setEmail(dto.getEmail());
         e.setNumeroTelephoneManager(dto.getNumeroTelephoneManager());
         e.setRole(dto.getRole());
+        e.setStatutCompte(dto.getStatutCompte());
         // Mot de passe encodé si fourni
         if (dto.getMotDePasseManager() != null) {
             e.setMotDePasseManager(passwordEncoder.encode(dto.getMotDePasseManager()));
@@ -81,15 +85,23 @@ public class ManagerService implements UserDetailsService {
 
     /**
      * Crée un nouveau Manager
-     * - Vérifie unicité de l’email
+     * - Vérifie unicité de l’email et du téléphone
      * - Attribue un rôle par défaut (ADMIN) si absent
      * - Génère un identifiant custom (6 chiffres)
-     * - Enregistre le manager et déclenche un code d’activation
+     * - Enregistre le manager et envoie les identifiants après commit
      */
     public ManagerDTO create(ManagerDTO dto) {
         if (dto == null) throw new IllegalArgumentException("Payload manquant");
+
+        // Vérification unicité email
         if (dto.getEmail() != null && managerRepository.existsByEmail(dto.getEmail())) {
             throw new IllegalArgumentException("Un manager avec cet email existe déjà");
+        }
+
+        // Vérification unicité téléphone
+        if (dto.getNumeroTelephoneManager() != null
+                && managerRepository.existsByNumeroTelephoneManager(dto.getNumeroTelephoneManager())) {
+            throw new IllegalArgumentException("Un manager avec ce numéro existe déjà");
         }
 
         // Rôle par défaut si non fourni
@@ -99,7 +111,7 @@ public class ManagerService implements UserDetailsService {
 
         Manager entity = toEntity(dto);
 
-        // ⚠️ AJOUT : statut par défaut = ACTIF
+        // Statut par défaut = ACTIF
         if (entity.getStatutCompte() == null) {
             entity.setStatutCompte(StatutCompte.ACTIF);
         }
@@ -115,8 +127,13 @@ public class ManagerService implements UserDetailsService {
 
         Manager saved = managerRepository.save(entity);
 
-        // ✉️ Envoi des identifiants par email
-        notificationService.envoyerIdentifiantsManager(saved, rawPassword);
+        // Envoi de l'email uniquement après que la transaction soit validée
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronizationAdapter() {
+            @Override
+            public void afterCommit() {
+                notificationService.envoyerIdentifiantsManager(saved, rawPassword);
+            }
+        });
 
         return toDto(saved);
     }
@@ -313,6 +330,25 @@ public class ManagerService implements UserDetailsService {
         return Map.of(
                 "status", "success",
                 "message", "Le manager " + manager.getEmail() + " a été archivé avec succès"
+        );
+    }
+    /**
+     * Désarchive un manager (le remet en ACTIF)
+     */
+    public Map<String, String> unarchiveManager(String managerId) {
+        Manager manager = managerRepository.findById(managerId)
+                .orElseThrow(() -> new EntityNotFoundException("Manager introuvable: " + managerId));
+
+        if (manager.getStatutCompte() != StatutCompte.ARCHIVE) {
+            throw new IllegalArgumentException("Le manager n’est pas archivé");
+        }
+
+        manager.setStatutCompte(StatutCompte.ACTIF);
+        managerRepository.save(manager);
+
+        return Map.of(
+                "status", "success",
+                "message", "Le manager " + manager.getEmail() + " a été désarchivé et réactivé avec succès"
         );
     }
 

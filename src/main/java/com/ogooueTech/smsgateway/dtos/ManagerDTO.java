@@ -3,6 +3,7 @@ package com.ogooueTech.smsgateway.dtos;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ogooueTech.smsgateway.enums.Role;
+import com.ogooueTech.smsgateway.enums.StatutCompte;
 import jakarta.persistence.Column;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -23,6 +24,7 @@ public class ManagerDTO {
     @Column(unique = true, nullable = false)
     private String numeroTelephoneManager;
     private Role role;
+    private StatutCompte statutCompte;
 
     // Optionnel maintenant (généré côté backend)
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
@@ -82,5 +84,13 @@ public class ManagerDTO {
 
     public void setMotDePasseManager(String motDePasseManager) {
         this.motDePasseManager = motDePasseManager;
+    }
+
+    public StatutCompte getStatutCompte() {
+        return statutCompte;
+    }
+
+    public void setStatutCompte(StatutCompte statutCompte) {
+        this.statutCompte = statutCompte;
     }
 }

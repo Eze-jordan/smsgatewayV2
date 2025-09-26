@@ -12,10 +12,12 @@ public class CustomUserDetails implements UserDetails {
     private final String nom;
     private final String role;
     private final Boolean abonneExpire;
+    private final String statutCompte; // ✅ ajout
+
 
     public CustomUserDetails(String id, String email, String password,
                              Collection<? extends GrantedAuthority> authorities,
-                             String nom, String role, Boolean abonneExpire) {
+                             String nom, String role, Boolean abonneExpire, String statutCompte) {
         this.id = id;
         this.email = email;
         this.password = password;
@@ -23,9 +25,11 @@ public class CustomUserDetails implements UserDetails {
         this.nom = nom;
         this.role = role;
         this.abonneExpire = abonneExpire;
+        this.statutCompte = statutCompte;
     }
+    public String getStatutCompte() { return statutCompte; }
 
-    public String getId() { return id; } // ✅ getter
+    public String getId() { return id; }
 
     public String getNom() {
         return nom;
@@ -60,14 +64,18 @@ public class CustomUserDetails implements UserDetails {
     @Override
     public boolean isAccountNonExpired() { return true; }
 
-    @Override
-    public boolean isAccountNonLocked() { return true; }
 
     @Override
     public boolean isCredentialsNonExpired() { return true; }
 
+
     @Override
-    public boolean isEnabled() { return true; }
+    public boolean isAccountNonLocked() {
+        return !"SUSPENDU".equalsIgnoreCase(statutCompte);
+    }
 
-
+    @Override
+    public boolean isEnabled() {
+        return "ACTIF".equalsIgnoreCase(statutCompte);
+    }
 }

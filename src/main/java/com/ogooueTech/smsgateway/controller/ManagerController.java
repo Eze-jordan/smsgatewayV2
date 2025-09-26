@@ -103,28 +103,33 @@ public class ManagerController {
     /** ⏸ Suspendre un manager */
     @PutMapping("/{id}/suspend")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN')")
-    @Operation(summary = "Suspendre un manager", tags = "Managers")
-    public ResponseEntity<Void> suspend(@PathVariable String id) {
-        managerService.suspendManager(id);
-        return ResponseEntity.noContent().build();
+    @Operation(summary = "Suspendre un manager")
+    public ResponseEntity<Map<String, String>> suspend(@PathVariable String id) {
+        return ResponseEntity.ok(managerService.suspendManager(id));
     }
 
     /** ✅ Réactiver un manager */
     @PutMapping("/{id}/reactivate")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN')")
-    @Operation(summary = "Réactiver un manager", tags = "Managers")
-    public ResponseEntity<Void> reactivate(@PathVariable String id) {
-        managerService.reactivateManager(id);
-        return ResponseEntity.noContent().build();
+    @Operation(summary = "Réactiver un manager")
+    public ResponseEntity<Map<String, String>> reactivate(@PathVariable String id) {
+        return ResponseEntity.ok(managerService.reactivateManager(id));
     }
 
     /** 🗄 Archiver un manager */
     @PutMapping("/{id}/archive")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN')")
-    @Operation(summary = "Archiver un manager (soft delete)", tags = "Managers")
-    public ResponseEntity<Void> archive(@PathVariable String id) {
-        managerService.archiveManager(id);
-        return ResponseEntity.noContent().build();
+    @Operation(summary = "Archiver un manager (soft delete)")
+    public ResponseEntity<Map<String, String>> archive(@PathVariable String id) {
+        return ResponseEntity.ok(managerService.archiveManager(id));
     }
+    /** 🔄 Désarchiver un manager */
+    @PutMapping("/{id}/unarchive")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN')")
+    @Operation(summary = "Désarchiver un manager (le remettre ACTIF)")
+    public ResponseEntity<Map<String, String>> unarchive(@PathVariable String id) {
+        return ResponseEntity.ok(managerService.unarchiveManager(id));
+    }
+
 
 }

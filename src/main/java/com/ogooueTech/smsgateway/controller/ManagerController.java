@@ -7,7 +7,9 @@ import com.ogooueTech.smsgateway.service.ManagerService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -20,7 +22,6 @@ import io.swagger.v3.oas.annotations.Operation;
 
 @RestController
 @RequestMapping("/api/V1/managers")
-@PreAuthorize("hasAnyRole('ADMIN')")
 @Tag(name = "Managers", description = "Endpoints for managing manager accounts (creation, activation, update, delete)")
 public class ManagerController {
 
@@ -31,6 +32,7 @@ public class ManagerController {
 
 
     @PostMapping("/create")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN')")
     @Operation(summary = "Create a manager account", tags = "Managers")
     public ResponseEntity<ManagerDTO> create(@Valid @RequestBody ManagerDTO body) {
         ManagerDTO manager = managerService.create(body);
@@ -40,10 +42,21 @@ public class ManagerController {
     }
 
     @PatchMapping("/{id}/change-password")
-    @Operation(summary = "Modifier le mot de passe du manager", tags = "Managers")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     public ResponseEntity<Map<String, String>> changePassword(
             @PathVariable String id,
-            @Valid @RequestBody ChangePasswordManager body) {
+            @Valid @RequestBody ChangePasswordManager body,
+            Authentication authentication) {
+
+        String connectedEmail = authentication.getName();
+        ManagerDTO manager = managerService.findById(id);
+
+        boolean isSuperAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN"));
+
+        if (!manager.getEmail().equalsIgnoreCase(connectedEmail) && !isSuperAdmin) {
+            throw new AccessDeniedException("Vous ne pouvez modifier que votre propre mot de passe");
+        }
 
         managerService.changePassword(id, body.getOldPassword(), body.getNewPassword());
 
@@ -54,7 +67,9 @@ public class ManagerController {
     }
 
 
+
     @GetMapping
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN')")
     @Operation(summary = "Get all managers", tags = "Managers")
     public ResponseEntity<List<ManagerDTO>> findAll() {
         return ResponseEntity.ok(managerService.findAll());
@@ -63,6 +78,7 @@ public class ManagerController {
 
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN')")
     @Operation(summary = "Get manager by ID", tags = "Managers")
     public ResponseEntity<ManagerDTO> findById(@PathVariable String id) {
         return ResponseEntity.ok(managerService.findById(id));
@@ -70,6 +86,7 @@ public class ManagerController {
 
     /** Partial update: send only the fields to modify */
     @PatchMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN')")
     @Operation(summary = "Update manager (partial)", tags = "Managers")
     public ResponseEntity<ManagerDTO> patch(@PathVariable String id, @RequestBody ManagerDTO body) {
         return ResponseEntity.ok(managerService.patch(id, body));
@@ -86,7 +103,7 @@ public class ManagerController {
     /** ⏸ Suspendre un manager */
     @PutMapping("/{id}/suspend")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN')")
-    @Operation(summary = "Suspendre un manager")
+    @Operation(summary = "Suspendre un manager", tags = "Managers")
     public ResponseEntity<Void> suspend(@PathVariable String id) {
         managerService.suspendManager(id);
         return ResponseEntity.noContent().build();
@@ -95,7 +112,7 @@ public class ManagerController {
     /** ✅ Réactiver un manager */
     @PutMapping("/{id}/reactivate")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN')")
-    @Operation(summary = "Réactiver un manager")
+    @Operation(summary = "Réactiver un manager", tags = "Managers")
     public ResponseEntity<Void> reactivate(@PathVariable String id) {
         managerService.reactivateManager(id);
         return ResponseEntity.noContent().build();
@@ -104,9 +121,10 @@ public class ManagerController {
     /** 🗄 Archiver un manager */
     @PutMapping("/{id}/archive")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN')")
-    @Operation(summary = "Archiver un manager (soft delete)")
+    @Operation(summary = "Archiver un manager (soft delete)", tags = "Managers")
     public ResponseEntity<Void> archive(@PathVariable String id) {
         managerService.archiveManager(id);
         return ResponseEntity.noContent().build();
     }
+
 }

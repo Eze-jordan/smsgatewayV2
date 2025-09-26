@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ogooueTech.smsgateway.enums.Role;
 import com.ogooueTech.smsgateway.enums.StatutCompte;
 import com.ogooueTech.smsgateway.enums.TypeCompte;
+import jakarta.persistence.Column;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -26,6 +27,7 @@ public class ClientDTO {
     private String secteurActivite;
     private String ville;
     private String adresse;
+    @Column(unique = true, nullable = false)
     private String telephone;
 
     @Email

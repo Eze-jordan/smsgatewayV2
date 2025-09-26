@@ -27,6 +27,7 @@ public class Client implements UserDetails {
     private String ville;
     @Column(length = 255)
     private String adresse;
+    @Column(unique = true, nullable = false)
     private String telephone;
     @Column(unique = true, nullable = false)
     private String email;

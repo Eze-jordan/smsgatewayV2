@@ -21,7 +21,9 @@ public class Manager  implements UserDetails {
     private String prenomManager;
     @JsonIgnore
     private String motDePasseManager;
+    @Column(unique = true, nullable = false)
     private String email;
+    @Column(unique = true, nullable = false)
     private String numeroTelephoneManager;
     @Enumerated(EnumType.STRING)
     private Role role;

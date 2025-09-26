@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Transactional
@@ -98,13 +99,18 @@ public class ManagerService implements UserDetailsService {
 
         Manager entity = toEntity(dto);
 
+        // ⚠️ AJOUT : statut par défaut = ACTIF
+        if (entity.getStatutCompte() == null) {
+            entity.setStatutCompte(StatutCompte.ACTIF);
+        }
+
         // Génère un ID 6 chiffres si absent
         if (entity.getIdManager() == null || entity.getIdManager().isBlank()) {
             entity.setIdManager(generateCustomId());
         }
 
         // Génère et encode un mot de passe aléatoire
-        String rawPassword = generatePassword(10); // 10 caractères par ex.
+        String rawPassword = generatePassword(10);
         entity.setMotDePasseManager(passwordEncoder.encode(rawPassword));
 
         Manager saved = managerRepository.save(entity);
@@ -114,6 +120,7 @@ public class ManagerService implements UserDetailsService {
 
         return toDto(saved);
     }
+
 
 
     /* ---------- Génération d’ID custom pour Manager ---------- */
@@ -248,7 +255,7 @@ public class ManagerService implements UserDetailsService {
     /**
      * Suspend un manager (il ne peut plus se connecter ni agir)
      */
-    public void suspendManager(String managerId) {
+    public Map<String, String> suspendManager(String managerId) {
         Manager manager = managerRepository.findById(managerId)
                 .orElseThrow(() -> new EntityNotFoundException("Manager introuvable: " + managerId));
 
@@ -260,12 +267,17 @@ public class ManagerService implements UserDetailsService {
         managerRepository.save(manager);
 
         notificationService.envoyerSuspensionManager(manager);
+
+        return Map.of(
+                "status", "success",
+                "message", "Le manager " + manager.getEmail() + " a été suspendu avec succès"
+        );
     }
 
     /**
      * Réactive un manager suspendu
      */
-    public void reactivateManager(String managerId) {
+    public Map<String, String> reactivateManager(String managerId) {
         Manager manager = managerRepository.findById(managerId)
                 .orElseThrow(() -> new EntityNotFoundException("Manager introuvable: " + managerId));
 
@@ -277,29 +289,17 @@ public class ManagerService implements UserDetailsService {
         managerRepository.save(manager);
 
         notificationService.envoyerReactivationManager(manager);
-    }
 
-    /**
-     * Met à jour complètement les infos d’un manager (sauf ID et mot de passe si non fourni)
-     */
-    public ManagerDTO update(String id, ManagerDTO dto) {
-        Manager manager = managerRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Manager introuvable: " + id));
-
-        // Unicité email
-        if (dto.getEmail() != null && !dto.getEmail().equalsIgnoreCase(manager.getEmail())
-                && managerRepository.existsByEmail(dto.getEmail())) {
-            throw new IllegalArgumentException("Un manager avec cet email existe déjà");
-        }
-
-        updateEntityFromDto(dto, manager);
-        return toDto(managerRepository.save(manager));
+        return Map.of(
+                "status", "success",
+                "message", "Le manager " + manager.getEmail() + " a été réactivé avec succès"
+        );
     }
 
     /**
      * Archive un manager (soft delete)
      */
-    public void archiveManager(String managerId) {
+    public Map<String, String> archiveManager(String managerId) {
         Manager manager = managerRepository.findById(managerId)
                 .orElseThrow(() -> new EntityNotFoundException("Manager introuvable: " + managerId));
 
@@ -309,6 +309,11 @@ public class ManagerService implements UserDetailsService {
 
         manager.setStatutCompte(StatutCompte.ARCHIVE);
         managerRepository.save(manager);
+
+        return Map.of(
+                "status", "success",
+                "message", "Le manager " + manager.getEmail() + " a été archivé avec succès"
+        );
     }
 
 

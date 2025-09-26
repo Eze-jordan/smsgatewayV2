@@ -10,4 +10,5 @@ public interface ManagerRepository extends JpaRepository<Manager, String> {
     boolean existsByEmail(String email);
 
 
+    boolean existsByNumeroTelephoneManager(String numeroTelephoneManager);
 }

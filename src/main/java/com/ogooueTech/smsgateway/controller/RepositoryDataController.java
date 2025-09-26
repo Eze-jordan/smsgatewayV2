@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 
@@ -45,24 +46,28 @@ public class RepositoryDataController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @Operation(summary = "Create a new repository entry", tags = "Repository")
     public ResponseEntity<?> create(@RequestBody RepositoryData data) {
         return repositoryDataService.create(data);
     }
 
     @PostMapping("/batch")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @Operation(summary = "Create multiple repository entries", tags = "Repository")
     public ResponseEntity<?> createBatch(@RequestBody List<RepositoryData> dataList) {
         return repositoryDataService.createBatch(dataList);
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @Operation(summary = "Update an existing repository entry", tags = "Repository")
     public ResponseEntity<?> update(@PathVariable Long id, @RequestBody RepositoryData updated) {
         return repositoryDataService.update(id, updated);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @Operation(summary = "Delete a repository entry", tags = "Repository")
     public ResponseEntity<?> delete(@PathVariable Long id) {
         return repositoryDataService.delete(id);

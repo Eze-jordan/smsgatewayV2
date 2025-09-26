@@ -3,6 +3,7 @@ package com.ogooueTech.smsgateway.dtos;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ogooueTech.smsgateway.enums.Role;
+import jakarta.persistence.Column;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
@@ -17,8 +18,9 @@ public class ManagerDTO {
 
     @NotBlank(message = "L'email est obligatoire")
     @Email(message = "Email invalide")
+    @Column(unique = true, nullable = false)
     private String email;
-
+    @Column(unique = true, nullable = false)
     private String numeroTelephoneManager;
     private Role role;
 

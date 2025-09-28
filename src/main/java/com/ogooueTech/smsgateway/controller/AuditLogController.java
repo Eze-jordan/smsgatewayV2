@@ -33,12 +33,12 @@ public class AuditLogController {
     }
 
     /** 🔍 Rechercher par utilisateur */
-    @GetMapping("/by-user/{userEmail}")
-    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+    /** 🔍 Rechercher par utilisateur */
+    @PostMapping("/by-user") @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @Operation(summary = "Filtrer les logs par utilisateur (email)")
-    public ResponseEntity<List<AuditLog>> getByUser(@PathVariable String userEmail) {
-        return ResponseEntity.ok(auditLogService.getByUser(userEmail));
-    }
+    public ResponseEntity<List<AuditLog>> getByUser(@RequestBody Map<String, String> body)
+    { String userEmail = body.get("userEmail");
+        return ResponseEntity.ok(auditLogService.getByUser(userEmail)); }
 
 
 

@@ -40,9 +40,6 @@ public class AuditLogService {
         return auditLogRepository.findByUserEmail(email);
     }
 
-    public List<AuditLog> getByAction(String action) {
-        return auditLogRepository.findByAction(action);
-    }
 
     public List<AuditLog> getByDate(LocalDateTime start, LocalDateTime end) {
         return auditLogRepository.findByTimestampBetween(start, end);

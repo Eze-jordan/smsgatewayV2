@@ -52,7 +52,7 @@ public class NotificationService {
             <p><strong>Vos informations :</strong></p>
             <ul>
               <li><strong>ID Manager :</strong> %s</li>
-              <li><strong>Email :</strong> %s</li>
+              <li><strong>Identifiant (email) :</strong> %s</li>
               <li><strong>Mot de passe (temporaire) :</strong> %s</li>
             </ul>
 
@@ -101,7 +101,7 @@ public class NotificationService {
                 <p><strong>Vos informations :</strong></p>
                 <ul>
                   <li><strong>ID Client :</strong> %s</li>
-                  <li><strong>Email :</strong> %s</li>
+                  <li><strong>Identifiant (email) :</strong> %s</li>
                   <li><strong>Mot de passe (temporaire) :</strong> %s</li>
                 </ul>
 

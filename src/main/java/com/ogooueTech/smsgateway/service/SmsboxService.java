@@ -1,5 +1,6 @@
 package com.ogooueTech.smsgateway.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,8 @@ public class SmsboxService {
     private static final String SMSBOX_URL = "https://api.smsbox.fr/1.1/api.php";
     private final RestTemplate restTemplate = new RestTemplate();
 
+    @Value("${smsbox.apikey}")
+    private String smsboxApiKey;  // 🔑 clé SMSBOX backend
     /**
      * Envoi d’un SMS via SMSBOX
      * @param apiKey clé API SMSBOX

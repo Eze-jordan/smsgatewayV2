@@ -65,6 +65,7 @@ public interface SmsMessageRepository extends JpaRepository<SmsMessage, String> 
             @Param("end") LocalDateTime end,
             Pageable pageable
     );
+    List<SmsMessage> findByStatut(SmsStatus statut);
 
 
 }

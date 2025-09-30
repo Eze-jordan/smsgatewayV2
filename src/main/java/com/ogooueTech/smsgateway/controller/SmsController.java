@@ -92,6 +92,13 @@ public class SmsController {
         }
     }
 
+    // 🔹 Récupérer tous les SMS envoyés (liste simple)
+    @GetMapping("/envoyes")
+    @Operation(summary = "Lister tous les SMS envoyés", description = "Retourne tous les SMS avec statut = ENVOYE")
+    public ResponseEntity<List<SmsMessage>> getAllSmsEnvoyes() {
+        return ResponseEntity.ok(smsService.getAllSmsEnvoyes());
+    }
+
     @PostMapping(path = "/muldesp", consumes = "application/json")
     @Operation(summary = "Schedule bulk SMS over a period (MULDESP)", tags = "SMS")
     public ResponseEntity<?> muldesp(@RequestHeader("X-API-Key") String apiKey,

@@ -52,6 +52,11 @@ public class SmsService {
         return client;
     }
 
+    public List<SmsMessage> getAllSmsEnvoyes() {
+        return smsRepo.findByStatut(SmsStatus.ENVOYE);
+    }
+
+
     // Générateur ref 6 chiffres
     private static final java.util.concurrent.atomic.AtomicLong LAST_REF =
             new java.util.concurrent.atomic.AtomicLong(900000);

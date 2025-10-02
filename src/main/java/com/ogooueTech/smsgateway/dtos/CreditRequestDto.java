@@ -9,6 +9,7 @@ import java.util.UUID;
 
 public record CreditRequestDto(
         UUID id,
+        String requestCode,
         String clientId,
         Integer quantity,
         CreditStatus status,
@@ -19,7 +20,6 @@ public record CreditRequestDto(
         LocalDateTime createdAt,
         LocalDateTime validatedAt,
 
-        // ✅ nouveaux champs
         BigDecimal pricePerSmsTtc,
         BigDecimal estimatedAmountTtc
 ) {
@@ -27,6 +27,7 @@ public record CreditRequestDto(
     public static CreditRequestDto from(CreditRequest cr) {
         return new CreditRequestDto(
                 cr.getId(),
+                cr.getRequestCode(),
                 cr.getClient().getIdclients(),
                 cr.getQuantity(),
                 cr.getStatus(),
@@ -45,6 +46,7 @@ public record CreditRequestDto(
     public static CreditRequestDto from(CreditRequest cr, BigDecimal pricePerSmsTtc, BigDecimal estimatedAmountTtc) {
         return new CreditRequestDto(
                 cr.getId(),
+                cr.getRequestCode(),
                 cr.getClient().getIdclients(),
                 cr.getQuantity(),
                 cr.getStatus(),

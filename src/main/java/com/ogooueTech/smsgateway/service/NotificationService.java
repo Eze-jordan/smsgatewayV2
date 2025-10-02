@@ -305,7 +305,7 @@ public class NotificationService {
 
 
     /** 🔔 Mail : création d'une demande de crédit */
-    public void envoyerDemandeCredit(Client client, int quantite) {
+    public void envoyerDemandeCredit(Client client, int quantite, String requestCode) {
         try {
             MimeMessage message = javaMailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -314,18 +314,20 @@ public class NotificationService {
             helper.setSubject("Demande de crédit enregistrée — SMS-GATEWAY");
 
             String html = """
-            <div style="font-family: Arial, sans-serif; background:#f9f9f9; padding:24px">
-              <div style="max-width:600px; margin:auto; background:#fff; border-radius:8px; padding:24px">
-                <h2 style="color:#2c3e50">Demande de crédit reçue ✅</h2>
-                <p>Bonjour <strong>%s</strong>,</p>
-                <p>Votre demande de crédit de <strong>%d SMS</strong> a bien été enregistrée et est en attente de validation.</p>
-                <p>👉 Vous serez notifié dès qu’elle sera validée ou rejetée.</p>
-                <p style="color:#999; font-size:12px; margin-top:16px">— SMS-GATEWAY</p>
-              </div>
-            </div>
-            """.formatted(
+        <div style="font-family: Arial, sans-serif; background:#f9f9f9; padding:24px">
+          <div style="max-width:600px; margin:auto; background:#fff; border-radius:8px; padding:24px">
+            <h2 style="color:#2c3e50">Demande de crédit reçue ✅</h2>
+            <p>Bonjour <strong>%s</strong>,</p>
+            <p>Votre demande de crédit de <strong>%d SMS</strong> a bien été enregistrée.</p>
+            <p><b>Request Code :</b> <code style="background:#eee; padding:2px 6px; border-radius:4px">%s</code></p>
+            <p>👉 Elle est en attente de validation. Vous serez notifié dès qu’elle sera validée ou rejetée.</p>
+            <p style="color:#999; font-size:12px; margin-top:16px">— SMS-GATEWAY</p>
+          </div>
+        </div>
+        """.formatted(
                     client.getRaisonSociale() != null ? client.getRaisonSociale() : "Client",
-                    quantite
+                    quantite,
+                    requestCode
             );
 
             helper.setText(html, true);
@@ -334,6 +336,7 @@ public class NotificationService {
             e.printStackTrace();
         }
     }
+
 
     /** 🔔 Mail : approbation d'une demande de crédit */
     public void envoyerCreditApprouve(Client client, int quantite, int nouveauSolde) {

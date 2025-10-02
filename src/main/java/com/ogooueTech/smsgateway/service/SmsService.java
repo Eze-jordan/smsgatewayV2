@@ -174,9 +174,9 @@ public class SmsService {
         }
 
         // Prépayé : débiter avant l’envoi (bloque si insuffisant)
-        if (isPrepaye(client)) {
-            debitPrepayeOuFail(client, toSend);
-        }
+        // if (isPrepaye(client)) {
+        //     debitPrepayeOuFail(client, toSend);
+        // }
 
         // Envoi effectif
         if (sms.getType() == SmsType.UNIDES) {
@@ -188,9 +188,9 @@ public class SmsService {
         }
 
         // Postpayé : incrémenter consommation réelle
-        if (isPostpaye(client)) {
-            creditPostpaye(client, toSend);
-        }
+        // if (isPostpaye(client)) {
+        //     creditPostpaye(client, toSend);
+        // }
 
         smsRepo.save(sms);
     }
@@ -203,17 +203,41 @@ public class SmsService {
         SmsMessage sms = smsRepo.findByRef(ref)
                 .orElseThrow(() -> new IllegalArgumentException("SMS introuvable avec ref: " + ref));
 
-        // changer statut du SMS
+        // Récupérer le client
+        Client client = clientRepo.lockById(sms.getClientId())
+                .orElseThrow(() -> new IllegalArgumentException("Client introuvable: " + sms.getClientId()));
+
+        // Récupérer les destinataires encore en attente
+        List<SmsRecipient> recs = recRepo.findBySms_RefAndStatut(ref, SmsStatus.EN_ATTENTE);
+
+        int toDebit = recs.size();
+        if (toDebit <= 0) {
+            // Aucun destinataire restant → rien à faire
+            return;
+        }
+
+        // Si client est prépayé → débiter maintenant
+        if (isPrepaye(client)) {
+            debitPrepayeOuFail(client, toDebit);
+        }
+
+        // Mettre à jour le statut du SMS
         sms.setStatut(SmsStatus.ENVOYE);
+        sms.setNbDejaEnvoye((sms.getNbDejaEnvoye() == null ? 0 : sms.getNbDejaEnvoye()) + toDebit);
         smsRepo.save(sms);
 
-        // changer statut des destinataires aussi
-        List<SmsRecipient> recs = recRepo.findBySms_RefAndStatut(ref, SmsStatus.EN_ATTENTE);
+        // Mettre à jour les destinataires
         for (SmsRecipient r : recs) {
             r.setStatut(SmsStatus.ENVOYE);
             recRepo.save(r);
         }
+
+        // Si client est postpayé → incrémenter consommation réelle
+        if (isPostpaye(client)) {
+            creditPostpaye(client, toDebit);
+        }
     }
+
 
     public void tickPlanification() {
         var planifies = smsRepo.findByTypeAndStatut(SmsType.MULDESP, SmsStatus.EN_ATTENTE);
@@ -263,7 +287,7 @@ public class SmsService {
                     toSend = solde;
                     pageRecipients = pageRecipients.subList(0, toSend);
                 }
-                debitPrepayeOuFail(client, toSend);
+           //     debitPrepayeOuFail(client, toSend);
             }
 
             // Envoi des SMS restants
@@ -297,7 +321,7 @@ public class SmsService {
     }
 
     private void envoyerUnitaire(String numero, SmsMessage sms, SmsRecipient r) {
-        r.setStatut(SmsStatus.ENVOYE);
+        r.setStatut(SmsStatus.EN_ATTENTE);
         recRepo.save(r);
         int current = sms.getNbDejaEnvoye() == null ? 0 : sms.getNbDejaEnvoye();
         sms.setNbDejaEnvoye(current + 1);

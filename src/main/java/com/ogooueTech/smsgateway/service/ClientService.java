@@ -374,4 +374,20 @@ public class ClientService {
             throw new IllegalStateException("Erreur export Excel: " + e.getMessage(), e);
         }
     }
+
+    /**
+     * Archive un client : ses données restent en base mais il n’a plus accès au système
+     */
+    public void archiveClient(String clientId) {
+        Client client = clientRepository.findById(clientId)
+                .orElseThrow(() -> new EntityNotFoundException("Client introuvable: " + clientId));
+
+        if (client.getStatutCompte() == StatutCompte.ARCHIVE) {
+            throw new IllegalArgumentException("Le client est déjà archivé");
+        }
+
+        client.setStatutCompte(StatutCompte.ARCHIVE);
+        clientRepository.save(client);
+
+    }
 }

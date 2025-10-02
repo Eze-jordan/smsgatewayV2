@@ -33,7 +33,7 @@ public class ClientController {
      * Creation by an admin or manager: generates an API key and sends it by email to the client
      */
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @Operation(summary = "Create a client (by manager/admin)", tags = "Clients")
     public ResponseEntity<ClientDTO> createByManager(@Valid @RequestBody ClientDTO body) {
         ClientDTO saved = clientService.createByManager(body);
@@ -64,28 +64,28 @@ public class ClientController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @Operation(summary = "Get all clients", tags = "Clients")
     public ResponseEntity<List<ClientDTO>> findAll() {
         return ResponseEntity.ok(clientService.findAll());
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @Operation(summary = "Get client by ID", tags = "Clients")
     public ResponseEntity<ClientDTO> findById(@PathVariable String id) {
         return ResponseEntity.ok(clientService.findById(id));
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @Operation(summary = "Update client (partial)", tags = "Clients")
     public ResponseEntity<ClientDTO> patch(@PathVariable String id, @RequestBody ClientDTO body) {
         return ResponseEntity.ok(clientService.patch(id, body));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @Operation(summary = "Delete client", tags = "Clients")
     public ResponseEntity<Void> delete(@PathVariable String id) {
         clientService.delete(id);
@@ -116,7 +116,7 @@ public class ClientController {
     }
     // ✅ Suspendre un client
     @PostMapping("/{clientId}/suspend")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @Operation(summary = "Suspendre un client", description = "Bloque toutes les actions de ce client")
     public ResponseEntity<?> suspendClient(@PathVariable String clientId) {
         clientService.suspendClient(clientId);
@@ -128,7 +128,7 @@ public class ClientController {
 
     // ✅ Réactiver un client
     @PostMapping("/{clientId}/reactivate")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @Operation(summary = "Réactiver un client", description = "Permet à un client suspendu de redevenir actif")
     public ResponseEntity<?> reactivateClient(@PathVariable String clientId) {
         clientService.reactivateClient(clientId);
@@ -138,14 +138,14 @@ public class ClientController {
         ));
     }
     @GetMapping("/search")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @Operation(summary = "Search clients by name", tags = "Clients")
     public ResponseEntity<List<ClientDTO>> search(@RequestParam("q") String query) {
         return ResponseEntity.ok(clientService.searchByName(query));
     }
 
     @GetMapping("/export/excel")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @Operation(summary = "export clients", tags = "Clients")
     public ResponseEntity<byte[]> exportClientsExcel() {
         byte[] excelFile = clientService.exportClientsToExcel();
@@ -154,6 +154,13 @@ public class ClientController {
                 .header("Content-Disposition", "attachment; filename=clients.xlsx")
                 .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                 .body(excelFile);
+    }
+
+    @PutMapping("/{id}/archive")
+    @Operation(summary = "Archive a client", description = "Archive a client account by ID")
+    public ResponseEntity<String> archiveClient(@PathVariable String id) {
+        clientService.archiveClient(id);
+        return ResponseEntity.ok("✅ Client " + id + " archived successfully.");
     }
 
 

@@ -1,11 +1,12 @@
 package com.ogooueTech.smsgateway.service;
 
-
+import com.ogooueTech.smsgateway.enums.StatutCompte;
 import com.ogooueTech.smsgateway.model.Client;
 import com.ogooueTech.smsgateway.model.Manager;
 import com.ogooueTech.smsgateway.repository.ClientRepository;
 import com.ogooueTech.smsgateway.repository.ManagerRepository;
 import com.ogooueTech.smsgateway.securite.CustomUserDetails;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -22,25 +23,32 @@ public class CustomUserDetailsService implements UserDetailsService {
         this.clientRepository = clientRepository;
     }
 
-
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        // 🔹 Recherche Manager
         Manager manager = managerRepository.findByEmail(email).orElse(null);
         if (manager != null) {
+            if (manager.getStatutCompte() != StatutCompte.ACTIF) {
+                throw new BadCredentialsException("⚠️ Compte manager " + manager.getStatutCompte().name().toLowerCase() + ". Connexion refusée.");
+            }
             return new CustomUserDetails(
-                    manager.getIdManager(),               // ✅ id ajouté
+                    manager.getIdManager(),
                     manager.getEmail(),
                     manager.getMotDePasseManager(),
                     manager.getAuthorities(),
                     manager.getNomManager(),
                     manager.getRole().name(),
-                    false,// ✅ pas d’abonnement pour Utilisateur
+                    false,
                     manager.getStatutCompte().name()
             );
         }
 
+        // 🔹 Recherche Client
         Client client = clientRepository.findByEmail(email).orElse(null);
         if (client != null) {
+            if (client.getStatutCompte() != StatutCompte.ACTIF) {
+                throw new BadCredentialsException("⚠️ Compte client " + client.getStatutCompte().name().toLowerCase() + ". Connexion refusée.");
+            }
             return new CustomUserDetails(
                     client.getIdclients(),
                     client.getEmail(),
@@ -48,15 +56,11 @@ public class CustomUserDetailsService implements UserDetailsService {
                     client.getAuthorities(),
                     client.getRaisonSociale(),
                     client.getRole().name(),
-                    false,// ✅ pas d’abonnement pour Utilisateur
+                    false,
                     client.getStatutCompte().name()
             );
         }
 
-
-        System.out.println("Connexion en tant que structure sanitaire : " + manager.getEmail());
-        throw new UsernameNotFoundException("Aucun compte trouvé pour : " + email);
+        throw new UsernameNotFoundException("❌ Aucun compte trouvé pour : " + email);
     }
-
 }
-

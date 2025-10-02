@@ -9,6 +9,9 @@ import java.time.Instant;
 @Table(name = "sms_recipients")
 public class SmsRecipient {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     private String id;
 
     @ManyToOne(optional = false) @JoinColumn(name = "ref_sms")

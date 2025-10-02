@@ -42,7 +42,7 @@ public class ManagerController {
     }
 
     @PatchMapping("/{id}/change-password")
-    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','AUDITEUR','SUPER_ADMIN')")
     public ResponseEntity<Map<String, String>> changePassword(
             @PathVariable String id,
             @Valid @RequestBody ChangePasswordManager body,

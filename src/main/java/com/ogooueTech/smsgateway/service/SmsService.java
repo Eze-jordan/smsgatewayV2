@@ -154,12 +154,11 @@ public class SmsService {
             recs = recRepo.findBySms_RefAndStatut(sms.getRef(), SmsStatus.EN_ATTENTE);
             toSend = recs.size();
             if (toSend == 0) {
-                sms.setStatut(SmsStatus.ENVOYE);
+                sms.setStatut(SmsStatus.EN_ATTENTE);
                 smsRepo.save(sms);
                 return;
             }
         } else {
-            // types inconnus => rien à faire
             return;
         }
 
@@ -182,8 +181,27 @@ public class SmsService {
             creditPostpaye(client, toSend);
         }
 
+        smsRepo.save(sms);
+    }
+    public List<SmsMessage> getAllPendingMessages() {
+        return smsRepo.findByStatut(SmsStatus.EN_ATTENTE);
+    }
+
+    @Transactional
+    public void markAsSent(String ref) {
+        SmsMessage sms = smsRepo.findByRef(ref)
+                .orElseThrow(() -> new IllegalArgumentException("SMS introuvable avec ref: " + ref));
+
+        // changer statut du SMS
         sms.setStatut(SmsStatus.ENVOYE);
         smsRepo.save(sms);
+
+        // changer statut des destinataires aussi
+        List<SmsRecipient> recs = recRepo.findBySms_RefAndStatut(ref, SmsStatus.EN_ATTENTE);
+        for (SmsRecipient r : recs) {
+            r.setStatut(SmsStatus.ENVOYE);
+            recRepo.save(r);
+        }
     }
 
     public void tickPlanification() {
@@ -213,7 +231,7 @@ public class SmsService {
             ).getContent();
 
             if (pageRecipients.isEmpty()) {
-                sms.setStatut(SmsStatus.ENVOYE);
+                sms.setStatut(SmsStatus.EN_ATTENTE);
                 smsRepo.save(sms);
                 continue;
             }
@@ -253,7 +271,7 @@ public class SmsService {
             // Vérifie si tout est envoyé
             boolean reste = recRepo.existsBySms_RefAndStatut(sms.getRef(), SmsStatus.EN_ATTENTE);
             if (!reste && today.isAfter(sms.getDateFinEnvoi())) {
-                sms.setStatut(SmsStatus.ENVOYE);
+         //       sms.setStatut(SmsStatus.ENVOYE);
             }
 
             smsRepo.save(sms);
@@ -461,4 +479,73 @@ public class SmsService {
             }
         }
     }
+
+    // Récupérer tous les UNIDES (simples) pour un client
+    public List<SmsMessage> getAllUnides(String clientId) {
+        return smsRepo.findByClientIdAndType(clientId, SmsType.UNIDES, Pageable.unpaged())
+                .getContent();
+    }
+
+    // Récupérer tous les MULDES avec les destinataires associés
+    public List<SmsMuldesResponse> getAllMuldes(String clientId) {
+        List<SmsMessage> messages = smsRepo.findByClientIdAndType(clientId, SmsType.MULDES, Pageable.unpaged())
+                .getContent();
+
+        List<String> refs = messages.stream().map(SmsMessage::getRef).toList();
+        var allRecipients = recRepo.findBySms_RefIn(refs);
+
+        var recipientsByRef = allRecipients.stream()
+                .collect(Collectors.groupingBy(
+                        r -> r.getSms().getRef(),
+                        Collectors.mapping(SmsRecipient::getNumero, Collectors.toList())
+                ));
+
+        return messages.stream()
+                .map(m -> new SmsMuldesResponse(
+                        m.getRef(),
+                        m.getClientId(),
+                        m.getEmetteur(),
+                        m.getCorps(),
+                        m.getType(),
+                        m.getStatut(),
+                        m.getCreatedAt(),
+                        recipientsByRef.getOrDefault(
+                                m.getRef(),
+                                parseDestinataires(m.getDestinataire())
+                        )
+                ))
+                .toList();
+    }
+
+    // Récupérer tous les MULDESP (planifiés) avec les destinataires associés
+    public List<SmsMuldesResponse> getAllMuldesp(String clientId) {
+        List<SmsMessage> messages = smsRepo.findByClientIdAndType(clientId, SmsType.MULDESP, Pageable.unpaged())
+                .getContent();
+
+        List<String> refs = messages.stream().map(SmsMessage::getRef).toList();
+        var allRecipients = recRepo.findBySms_RefIn(refs);
+
+        var recipientsByRef = allRecipients.stream()
+                .collect(Collectors.groupingBy(
+                        r -> r.getSms().getRef(),
+                        Collectors.mapping(SmsRecipient::getNumero, Collectors.toList())
+                ));
+
+        return messages.stream()
+                .map(m -> new SmsMuldesResponse(
+                        m.getRef(),
+                        m.getClientId(),
+                        m.getEmetteur(),
+                        m.getCorps(),
+                        m.getType(),
+                        m.getStatut(),
+                        m.getCreatedAt(),
+                        recipientsByRef.getOrDefault(
+                                m.getRef(),
+                                parseDestinataires(m.getDestinataire())
+                        )
+                ))
+                .toList();
+    }
+
 }

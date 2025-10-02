@@ -14,6 +14,7 @@ import org.springframework.data.jpa.repository.*;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 
 public interface SmsMessageRepository extends JpaRepository<SmsMessage, String> {
@@ -65,6 +66,7 @@ public interface SmsMessageRepository extends JpaRepository<SmsMessage, String> 
             @Param("end") LocalDateTime end,
             Pageable pageable
     );
+    Optional<SmsMessage> findByRef(String ref);
     List<SmsMessage> findByStatut(SmsStatus statut);
 
 

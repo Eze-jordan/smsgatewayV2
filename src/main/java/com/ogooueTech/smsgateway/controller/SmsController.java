@@ -92,6 +92,20 @@ public class SmsController {
         }
     }
 
+    @Operation(summary = "Get all PENDING SMS", description = "Returns all SMS with status = EN_ATTENTE")
+    @GetMapping("/pending")
+    public ResponseEntity<List<SmsMessage>> getPendingMessages() {
+        List<SmsMessage> pending = smsService.getAllPendingMessages();
+        return ResponseEntity.ok(pending);
+    }
+
+    @Operation(summary = "Mark SMS as SENT", description = "Change status of a specific SMS (and its recipients) from EN_ATTENTE to ENVOYE")
+    @PutMapping("/{ref}/mark-sent")
+    public ResponseEntity<String> markAsSent(@PathVariable String ref) {
+        smsService.markAsSent(ref);
+        return ResponseEntity.ok("✅ SMS " + ref + " marked as SENT.");
+    }
+
     // 🔹 Récupérer tous les SMS envoyés (liste simple)
     @GetMapping("/envoyes")
     @Operation(summary = "Lister tous les SMS envoyés", description = "Retourne tous les SMS avec statut = ENVOYE")
@@ -215,5 +229,26 @@ public class SmsController {
             @RequestParam(required = false) SmsStatus statut
     ) {
         return ResponseEntity.ok(smsService.getMuldesWithParsedRecipients(clientId, page, size, statut));
+    }
+
+    // ✅ Récupérer tous les UNIDES
+    @GetMapping("/unides/{clientId}")
+    @Operation(summary = "Get all UNIDES SMS", description = "Retrieve all single-destination SMS for a given client")
+    public List<SmsMessage> getAllUnides(@PathVariable String clientId) {
+        return smsService.getAllUnides(clientId);
+    }
+
+    // ✅ Récupérer tous les MULDES
+    @GetMapping("/muldes/{clientId}")
+    @Operation(summary = "Get all MULDES SMS", description = "Retrieve all multi-destination SMS for a given client with recipients")
+    public List<SmsMuldesResponse> getAllMuldes(@PathVariable String clientId) {
+        return smsService.getAllMuldes(clientId);
+    }
+
+    // ✅ Récupérer tous les MULDESP (planifiés)
+    @GetMapping("/muldesp/{clientId}")
+    @Operation(summary = "Get all MULDESP SMS", description = "Retrieve all scheduled multi-destination SMS for a given client with recipients")
+    public List<SmsMuldesResponse> getAllMuldesp(@PathVariable String clientId) {
+        return smsService.getAllMuldesp(clientId);
     }
 }

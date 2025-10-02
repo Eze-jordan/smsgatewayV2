@@ -33,27 +33,38 @@ public class CreditService {
             throw new IllegalArgumentException("clientId requis");
         if (quantity <= 0)
             throw new IllegalArgumentException("quantity doit être > 0");
-        if (idempotencyKey == null || idempotencyKey.isBlank())
-            throw new IllegalArgumentException("idempotencyKey requis");
-
-        // Idempotence
-        var existing = creditRepo.findByIdempotencyKey(idempotencyKey.trim());
-        if (existing.isPresent()) {
-            CreditRequest e = existing.get();
-            var prixSms = e.getClient().getCoutSmsTtc();
-            if (prixSms == null) throw new IllegalStateException("Coût SMS (TTC) non défini pour le client");
-            var estimated = prixSms.multiply(java.math.BigDecimal.valueOf(e.getQuantity()))
-                    .setScale(0, java.math.RoundingMode.HALF_UP);
-            return CreditRequestDto.from(e, prixSms, estimated);
-        }
 
         // Verrouille le client
         Client client = clientRepo.lockById(clientId)
                 .orElseThrow(() -> new IllegalArgumentException("Client introuvable: " + clientId));
 
-        // Seuls PREPAYE
         if (client.getTypeCompte() != TypeCompte.PREPAYE) {
             throw new IllegalStateException("Seuls les comptes PRÉPAYÉS peuvent demander un crédit. Type actuel: " + client.getTypeCompte());
+        }
+
+        // Si aucune clé n'est fournie, on vérifie si une demande PENDING existe déjà
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            var existingPending = creditRepo.findByClient_IdclientsAndStatus(clientId, CreditStatus.PENDING, PageRequest.of(0, 1))
+                    .stream().findFirst();
+            if (existingPending.isPresent()) {
+                CreditRequest e = existingPending.get();
+                var prixSms = e.getClient().getCoutSmsTtc();
+                var estimated = prixSms.multiply(java.math.BigDecimal.valueOf(e.getQuantity()))
+                        .setScale(0, java.math.RoundingMode.HALF_UP);
+                return CreditRequestDto.from(e, prixSms, estimated);
+            }
+            // sinon, on génère une nouvelle clé REQxxxxxx
+            idempotencyKey = "REQ" + ((int)(Math.random() * 900000) + 100000);
+        } else {
+            // Si une clé est fournie, on vérifie l'unicité pour ce client
+            var existing = creditRepo.findByClient_IdclientsAndIdempotencyKey(clientId, idempotencyKey.trim());
+            if (existing.isPresent()) {
+                CreditRequest e = existing.get();
+                var prixSms = e.getClient().getCoutSmsTtc();
+                var estimated = prixSms.multiply(java.math.BigDecimal.valueOf(e.getQuantity()))
+                        .setScale(0, java.math.RoundingMode.HALF_UP);
+                return CreditRequestDto.from(e, prixSms, estimated);
+            }
         }
 
         // Prix unitaire
@@ -61,7 +72,6 @@ public class CreditService {
         if (prixSms == null)
             throw new IllegalStateException("Coût SMS (TTC) non défini pour le client");
 
-        // Maker = email client
         String makerEmail = client.getEmail();
         if (makerEmail == null || makerEmail.isBlank()) {
             throw new IllegalStateException("Email du client manquant: impossible de définir le maker");
@@ -74,13 +84,11 @@ public class CreditService {
         req.setIdempotencyKey(idempotencyKey.trim());
         req.setStatus(CreditStatus.PENDING);
 
-        // Montant estimé TTC
         java.math.BigDecimal estimated = prixSms.multiply(java.math.BigDecimal.valueOf(quantity))
                 .setScale(0, java.math.RoundingMode.HALF_UP);
 
         CreditRequest saved = creditRepo.save(req);
 
-        // 🔔 Envoi mail au client
         notificationService.envoyerDemandeCredit(client, quantity);
 
         return CreditRequestDto.from(saved, prixSms, estimated);

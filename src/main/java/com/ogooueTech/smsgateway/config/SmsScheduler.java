@@ -1,5 +1,5 @@
 package com.ogooueTech.smsgateway.config;
-
+/*
 import com.ogooueTech.smsgateway.service.SmsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,3 +21,4 @@ public class SmsScheduler {
         smsService.tickPlanification();
     }
 }
+ */

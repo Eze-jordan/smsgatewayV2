@@ -10,7 +10,7 @@ import java.util.UUID;
 
 public interface CreditRequestRepository extends JpaRepository<CreditRequest, UUID> {
 
-    Optional<CreditRequest> findByIdempotencyKey(String idempotencyKey);
+    Optional<CreditRequest> findByClient_IdclientsAndIdempotencyKey(String clientId, String idempotencyKey);
 
     Page<CreditRequest> findByClient_Idclients(String clientId, Pageable pageable);
 

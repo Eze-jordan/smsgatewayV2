@@ -11,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -154,6 +155,17 @@ public class ClientController {
                 .header("Content-Disposition", "attachment; filename=clients.xlsx")
                 .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                 .body(excelFile);
+    }
+
+    @PutMapping("/{id}/regenerate-api-key")
+    @Operation(summary = "Regenerate API Key", description = "Generate a new temporary API key (valid 30 minutes)")
+    public ResponseEntity<Map<String, Object>> regenerateApiKey(@PathVariable String id) {
+        String newKey = clientService.regenerateApiKey(id);
+        return ResponseEntity.ok(Map.of(
+                "message", "API key regenerated successfully",
+                "newApiKey", newKey,
+                "expiresAt", LocalDateTime.now().plusMinutes(30).toString()
+        ));
     }
 
     @PutMapping("/{id}/archive")

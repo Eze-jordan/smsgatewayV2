@@ -10,6 +10,7 @@ import com.ogooueTech.smsgateway.model.SmsRecipient;
 import com.ogooueTech.smsgateway.repository.ClientRepository;
 import com.ogooueTech.smsgateway.repository.SmsMessageRepository;
 import com.ogooueTech.smsgateway.repository.SmsRecipientRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,22 +40,32 @@ public class SmsService {
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalArgumentException("Clé API requise");
         }
+
         Client client = clientRepo.findByCleApi(apiKey)
                 .orElseThrow(() -> new IllegalArgumentException("Clé API invalide"));
 
         if (clientId != null && !client.getIdclients().equals(clientId)) {
             throw new IllegalArgumentException("Clé API non associée à ce client");
         }
+
         if (client.getStatutCompte() == StatutCompte.SUSPENDU) {
             throw new IllegalArgumentException("Compte suspendu. Aucune action n'est autorisée.");
+        }
+
+        // ✅ Vérifie l’expiration de la clé API
+        if (client.getCleApiExpiration() == null || client.getCleApiExpiration().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("API Key expired. Please regenerate.");
         }
 
         return client;
     }
 
+
     public List<SmsMessage> getAllSmsEnvoyes() {
         return smsRepo.findByStatut(SmsStatus.ENVOYE);
     }
+
+
 
 
     // Générateur ref 6 chiffres

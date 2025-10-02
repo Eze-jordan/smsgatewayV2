@@ -11,6 +11,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -59,6 +60,10 @@ public class Client implements UserDetails {
     // Client.java
     @Enumerated(EnumType.STRING)        // persiste l’ENUM en clair
     private Role role;
+    @Column(name = "cle_api_expiration")
+    private LocalDateTime cleApiExpiration;
+
+
 
 
     @Enumerated(EnumType.STRING)
@@ -224,6 +229,13 @@ public class Client implements UserDetails {
     @Override
     public String getUsername() {
         return this.email;
+    }
+    public LocalDateTime getCleApiExpiration() {
+        return cleApiExpiration;
+    }
+
+    public void setCleApiExpiration(LocalDateTime cleApiExpiration) {
+        this.cleApiExpiration = cleApiExpiration;
     }
 
 }

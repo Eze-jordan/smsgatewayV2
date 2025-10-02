@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.ByteArrayOutputStream;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -76,14 +77,22 @@ public class ClientService {
      */
     private String generateApiKey() {
         var sr = new java.security.SecureRandom();
-        byte[] bytes = new byte[24]; // 192 bits = 24 octets
+        byte[] bytes = new byte[24]; // 192 bits
         String apiKey;
         do {
             sr.nextBytes(bytes);
             apiKey = java.util.HexFormat.of().formatHex(bytes);
-        } while (clientRepository.existsByCleApi(apiKey)); // unicité en base
+        } while (clientRepository.existsByCleApi(apiKey));
         return apiKey;
     }
+
+    /** Génère une clé API et met expiration à +30min */
+    private void assignNewApiKey(Client client) {
+        String apiKey = generateApiKey();
+        client.setCleApi(apiKey);
+        client.setCleApiExpiration(LocalDateTime.now().plusMinutes(30));
+    }
+
 
     /**
      * Génère un mot de passe temporaire robuste
@@ -149,9 +158,8 @@ public class ClientService {
         if (entity.getSoldeNet() == null) entity.setSoldeNet(0);
         if (entity.getStatutCompte() == null) entity.setStatutCompte(StatutCompte.ACTIF);
 
-        // Génère la clé API
-        String apiKey = generateApiKey();
-        entity.setCleApi(apiKey);
+        // ✅ Génère la clé API temporaire avec expiration 30 min
+        assignNewApiKey(entity);
 
         // Génère le mot de passe temporaire + hash
         String rawPassword = generateTempPassword();
@@ -169,7 +177,18 @@ public class ClientService {
         // Retourne le DTO
         return ClientMapper.toDto(saved);
     }
+    /**
+     * régénération de la clé API
+     */
+    public String regenerateApiKey(String clientId) {
+        Client client = clientRepository.findById(clientId)
+                .orElseThrow(() -> new EntityNotFoundException("Client introuvable: " + clientId));
 
+        assignNewApiKey(client);
+        clientRepository.save(client);
+
+        return client.getCleApi();
+    }
     /**
      * Récupère tous les clients en DTO
      */

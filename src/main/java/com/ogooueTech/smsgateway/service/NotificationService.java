@@ -319,7 +319,7 @@ public class NotificationService {
             <h2 style="color:#2c3e50">Demande de crédit reçue ✅</h2>
             <p>Bonjour <strong>%s</strong>,</p>
             <p>Votre demande de crédit de <strong>%d SMS</strong> a bien été enregistrée.</p>
-            <p><b>Request Code :</b> <code style="background:#eee; padding:2px 6px; border-radius:4px">%s</code></p>
+            <p><b>Code de demande :</b> <span style="color:#2980b9">%s</span></p>
             <p>👉 Elle est en attente de validation. Vous serez notifié dès qu’elle sera validée ou rejetée.</p>
             <p style="color:#999; font-size:12px; margin-top:16px">— SMS-GATEWAY</p>
           </div>

@@ -89,7 +89,7 @@ public class CreditService {
 
         CreditRequest saved = creditRepo.save(req);
 
-        notificationService.envoyerDemandeCredit(client, quantity);
+        notificationService.envoyerDemandeCredit(client, quantity,idempotencyKey);
 
         return CreditRequestDto.from(saved, prixSms, estimated);
     }

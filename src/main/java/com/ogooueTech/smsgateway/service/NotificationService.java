@@ -327,7 +327,7 @@ public class NotificationService {
         """.formatted(
                     client.getRaisonSociale() != null ? client.getRaisonSociale() : "Client",
                     quantite,
-                    requestCode
+                    requestCode // ✅ affiché ici
             );
 
             helper.setText(html, true);
@@ -336,6 +336,7 @@ public class NotificationService {
             e.printStackTrace();
         }
     }
+
 
 
     /** 🔔 Mail : approbation d'une demande de crédit */

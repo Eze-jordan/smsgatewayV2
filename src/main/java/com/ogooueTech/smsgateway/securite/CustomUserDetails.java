@@ -11,20 +11,20 @@ public class CustomUserDetails implements UserDetails {
     private final Collection<? extends GrantedAuthority> authorities;
     private final String nom;
     private final String role;
-    private final Boolean abonneExpire;
-    private final String statutCompte; // ✅ ajout
+    private final String statutCompte;
+    private final String typeCompte;
 
 
     public CustomUserDetails(String id, String email, String password,
                              Collection<? extends GrantedAuthority> authorities,
-                             String nom, String role, Boolean abonneExpire, String statutCompte) {
+                             String nom, String role, String typeCompte, String statutCompte) {
         this.id = id;
         this.email = email;
         this.password = password;
         this.authorities = authorities;
         this.nom = nom;
         this.role = role;
-        this.abonneExpire = abonneExpire;
+        this.typeCompte = typeCompte;
         this.statutCompte = statutCompte;
     }
     public String getStatutCompte() { return statutCompte; }
@@ -39,8 +39,9 @@ public class CustomUserDetails implements UserDetails {
         return role;
     }
 
-    public Boolean getAbonneExpire() {
-        return abonneExpire;}
+    public String getTypeCompte() {
+        return typeCompte;
+    }
 
     public String getEmail() {
         return email;

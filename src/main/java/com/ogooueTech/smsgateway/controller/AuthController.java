@@ -48,7 +48,7 @@ public class AuthController {
                     userDetails.getNom(),
                     userDetails.getUsername(),
                     userDetails.getRole(),
-                    userDetails.getAbonneExpire() // ✅ ajouté
+                    userDetails.getTypeCompte()
 
             );
 

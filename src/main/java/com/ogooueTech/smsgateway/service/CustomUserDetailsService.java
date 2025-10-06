@@ -38,7 +38,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                     manager.getAuthorities(),
                     manager.getNomManager(),
                     manager.getRole().name(),
-                    false,
+                    "MANAGER",
                     manager.getStatutCompte().name()
             );
         }
@@ -56,7 +56,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                     client.getAuthorities(),
                     client.getRaisonSociale(),
                     client.getRole().name(),
-                    false,
+                    client.getTypeCompte() != null ? client.getTypeCompte().name() : "INCONNU",
                     client.getStatutCompte().name()
             );
         }

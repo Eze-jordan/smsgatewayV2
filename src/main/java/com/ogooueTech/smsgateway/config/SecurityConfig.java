@@ -75,23 +75,36 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:3001","http://localhost:4200"
-        ));
+
+        // ✅ On autorise plusieurs domaines + wildcard (*)
+        configuration.addAllowedOriginPattern("http://localhost:3001");
+        configuration.addAllowedOriginPattern("http://localhost:4200");
+        configuration.addAllowedOriginPattern("*"); // tous les domaines externes autorisés
+
+        // ✅ Autoriser toutes les méthodes HTTP
         configuration.setAllowedMethods(Arrays.asList("*"));
+
+        // ✅ Autoriser tous les headers
         configuration.setAllowedHeaders(Arrays.asList("*"));
+
+        // ✅ Exposer certains headers dans la réponse (visibles côté client)
         configuration.setExposedHeaders(Arrays.asList(
                 "Authorization",
                 "Content-Disposition"
         ));
+
+        // ✅ Autoriser les cookies / tokens JWT
         configuration.setAllowCredentials(true);
+
+        // ✅ Mise en cache de la politique CORS (1h)
         configuration.setMaxAge(3600L);
 
+        // ✅ Appliquer la config à toutes les routes
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
+
         return source;
     }
-
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config)
             throws Exception {

@@ -35,8 +35,11 @@ public class SmsService {
         this.clientRepo = clientRepo;
     }
 
-    /** Valide la clé API et sa correspondance avec le clientId, renvoie l'entité Client si OK. */
-    public Client assertApiKey(String apiKey, String clientId) {
+    /**
+     * ✅ Version simplifiée pour les intégrations externes :
+     * Vérifie uniquement la clé API et retourne le client associé.
+     */
+    public Client assertApiKey(String apiKey) {
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalArgumentException("Clé API requise");
         }
@@ -44,21 +47,18 @@ public class SmsService {
         Client client = clientRepo.findByCleApi(apiKey)
                 .orElseThrow(() -> new IllegalArgumentException("Clé API invalide"));
 
-        if (clientId != null && !client.getIdclients().equals(clientId)) {
-            throw new IllegalArgumentException("Clé API non associée à ce client");
-        }
-
         if (client.getStatutCompte() == StatutCompte.SUSPENDU) {
             throw new IllegalArgumentException("Compte suspendu. Aucune action n'est autorisée.");
         }
 
-        // ✅ Vérifie l’expiration de la clé API
+        // Vérifie si la clé est expirée
         if (client.getCleApiExpiration() == null || client.getCleApiExpiration().isBefore(LocalDateTime.now())) {
-            throw new IllegalArgumentException("API Key expired. Please regenerate.");
+            throw new IllegalArgumentException("Clé API expirée. Veuillez la régénérer depuis votre espace client.");
         }
 
         return client;
     }
+
 
 
     public List<SmsMessage> getAllSmsEnvoyes() {

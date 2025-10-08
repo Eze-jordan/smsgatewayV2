@@ -61,6 +61,8 @@ public class SecurityConfig {
                                 "/api/V1/password/reset",
                                 "/api/V1/manager/password/forgot",
                                 "/api/V1/manager/password/reset",
+                                "/api/V1/sms/{ref}/mark-sent",
+                                "/api/V1/sms/pending",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()

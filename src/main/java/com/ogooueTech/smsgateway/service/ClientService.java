@@ -86,11 +86,11 @@ public class ClientService {
         return apiKey;
     }
 
-    /** Génère une clé API et met expiration à +30min */
+    /** Génère une clé API et met expiration à +5 ans */
     private void assignNewApiKey(Client client) {
         String apiKey = generateApiKey();
         client.setCleApi(apiKey);
-        client.setCleApiExpiration(LocalDateTime.now().plusMinutes(30));
+        client.setCleApiExpiration(LocalDateTime.now().plusYears(5));
     }
 
 

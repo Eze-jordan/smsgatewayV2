@@ -101,6 +101,7 @@ public class BillingAdminController {
     }
 
     @PostMapping("/facturer/{clientId}/{annee}/{mois}")
+    @Operation(summary = "Generate monthly invoices for one client", tags = "Billing")
     public ResponseEntity<?> facturerUnClient(
             @PathVariable String clientId,
             @PathVariable int annee,

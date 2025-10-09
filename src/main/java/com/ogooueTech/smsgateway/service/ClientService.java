@@ -93,7 +93,6 @@ public class ClientService {
         client.setCleApiExpiration(LocalDateTime.now().plusYears(5));
     }
 
-
     /**
      * Génère un mot de passe temporaire robuste
      * - contient au moins 1 majuscule, 1 minuscule, 1 chiffre et 1 spécial
@@ -177,6 +176,7 @@ public class ClientService {
         // Retourne le DTO
         return ClientMapper.toDto(saved);
     }
+
     /**
      * régénération de la clé API
      */

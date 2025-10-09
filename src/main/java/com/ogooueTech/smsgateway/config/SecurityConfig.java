@@ -1,6 +1,7 @@
 package com.ogooueTech.smsgateway.config;
 
 
+import com.ogooueTech.smsgateway.securite.ApiKeyFilter;
 import com.ogooueTech.smsgateway.securite.JwtFiller;
 import com.ogooueTech.smsgateway.service.CustomUserDetailsService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -29,13 +30,15 @@ public class SecurityConfig {
     private final CustomUserDetailsService customUserDetailsService;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final JwtFiller jwtFiller;
+    private final ApiKeyFilter apiKeyFilter;
 
     public SecurityConfig(CustomUserDetailsService customUserDetailsService,
                           BCryptPasswordEncoder bCryptPasswordEncoder,
-                          JwtFiller jwtFiller) {
+                          JwtFiller jwtFiller, ApiKeyFilter apiKeyFilter) {
         this.customUserDetailsService = customUserDetailsService;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
         this.jwtFiller = jwtFiller;
+        this.apiKeyFilter = apiKeyFilter;
     }
 
     @Bean
@@ -63,15 +66,17 @@ public class SecurityConfig {
                                 "/api/V1/manager/password/reset",
                                 "/api/V1/sms/{ref}/mark-sent",
                                 "/api/V1/sms/pending",
-                                "/api/V1/sms/unides",
-                                "/api/V1/sms/muldes",
-                                "/api/V1/sms/muldesp",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
+                        // ✅ Les endpoints SMS sont maintenant protégés par clé API
+                        .requestMatchers("/api/V1/sms/**").authenticated()
                         .anyRequest().authenticated()
+
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // ✅ On ajoute le filtre API Key avant le filtre JWT
+                .addFilterBefore(apiKeyFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtFiller, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

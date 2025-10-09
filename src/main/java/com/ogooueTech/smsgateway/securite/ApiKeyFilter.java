@@ -29,20 +29,24 @@ public class ApiKeyFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        String path = request.getServletPath();
+        // ✅ Normalise le chemin en minuscules
+        String path = request.getServletPath().toLowerCase();
 
-        // ✅ On ne protège que ces 3 endpoints SMS
-        if (path.equals("/api/V1/sms/unides")
-                || path.equals("/api/V1/sms/muldes")
-                || path.equals("/api/V1/sms/muldesp")) {
+        // ✅ Ne protège que ces 3 endpoints SMS
+        if (path.startsWith("/api/v1/sms/unides")
+                || path.startsWith("/api/v1/sms/muldes")
+                || path.startsWith("/api/v1/sms/muldesp")) {
 
             // Vérifie si un token JWT est déjà présent
             String authHeader = request.getHeader("Authorization");
             boolean hasJwt = (authHeader != null && authHeader.startsWith("Bearer "));
 
-            // Si pas de JWT, on exige une clé API
+            // ✅ Si pas de JWT, on exige une clé API
             if (!hasJwt) {
                 String apiKey = request.getHeader("X-API-Key");
+
+                System.out.println("🔍 PATH : " + path);
+                System.out.println("🔑 X-API-Key reçue : " + (apiKey != null ? apiKey.substring(0, Math.min(8, apiKey.length())) + "..." : "Aucune"));
 
                 if (apiKey == null || apiKey.isBlank()) {
                     sendUnauthorized(response, "Clé API manquante");

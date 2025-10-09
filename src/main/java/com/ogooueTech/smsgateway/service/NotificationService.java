@@ -239,6 +239,8 @@ public class NotificationService {
         nf.setMaximumFractionDigits(0);
         return nf.format(v);
     }
+
+
     /** Notifie un client de la suspension de son compte */
     public void envoyerSuspensionClient(Client client) {
         try {

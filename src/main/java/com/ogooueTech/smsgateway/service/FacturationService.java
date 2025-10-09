@@ -21,30 +21,28 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Service
-
 public class FacturationService {
 
+    private final InvoiceAppService invoiceAppService; // ✅ ajout
     private final ExerciceRepository exerciceRepository;
     private final CalendrierFacturationRepository calendrierRepository;
     private final ClientRepository clientRepository;
     private final FactureRepository factureRepository;
 
-    public FacturationService(ExerciceRepository exerciceRepository, CalendrierFacturationRepository calendrierRepository, ClientRepository clientRepository, FactureRepository factureRepository) {
+    public FacturationService(
+            InvoiceAppService invoiceAppService,
+            ExerciceRepository exerciceRepository,
+            CalendrierFacturationRepository calendrierRepository,
+            ClientRepository clientRepository,
+            FactureRepository factureRepository
+    ) {
+        this.invoiceAppService = invoiceAppService;
         this.exerciceRepository = exerciceRepository;
         this.calendrierRepository = calendrierRepository;
         this.clientRepository = clientRepository;
         this.factureRepository = factureRepository;
     }
 
-    /**
-     * Génère les factures pour (annee, mois) en utilisant le prix TTC stocké sur chaque client.
-     * Règles:
-     *  - Prend uniquement les clients POSTPAYE & ACTIF
-     *  - Skip si soldeNet <= 0
-     *  - Skip si coutSmsTtc null (client mal paramétré)
-     *  - Anti-doublon par (client, dateDebut, dateFin)
-     *  - Montant arrondi à 2 décimales (HALF_UP)
-     */
     @Transactional
     public BillingRunResult genererFacturesMensuelles(int annee, int mois) {
         Exercice exercice = exerciceRepository
@@ -68,14 +66,13 @@ public class FacturationService {
             int conso = c.getSoldeNet() == null ? 0 : c.getSoldeNet();
             if (conso <= 0) { zero++; continue; }
 
-            BigDecimal prixUnitaireInt = c.getCoutSmsTtc(); // FCFA/SMS entier
+            BigDecimal prixUnitaireInt = c.getCoutSmsTtc();
             if (prixUnitaireInt == null) { missingPrice++; continue; }
 
-            //Convertir en BigDecimal (FCFA = 0 décimale)
-            BigDecimal prixUnitaire = BigDecimal.valueOf(prixUnitaireInt.longValue()); // scale 0
+            BigDecimal prixUnitaire = BigDecimal.valueOf(prixUnitaireInt.longValue());
             BigDecimal montant = prixUnitaire
                     .multiply(BigDecimal.valueOf(conso))
-                    .setScale(0, RoundingMode.HALF_UP); // cohérent avec FCFA
+                    .setScale(0, RoundingMode.HALF_UP);
 
             boolean dejaCree = factureRepository
                     .findByClientAndDateDebutAndDateFin(c, debut, fin)
@@ -88,13 +85,20 @@ public class FacturationService {
             f.setDateDebut(debut);
             f.setDateFin(fin);
             f.setConsommationSms(conso);
-            f.setPrixUnitaire(prixUnitaire); // BigDecimal
-            f.setMontant(montant);           // BigDecimal
+            f.setPrixUnitaire(prixUnitaire);
+            f.setMontant(montant);
 
-            factureRepository.save(f);
-            // ✅ POSTPAYE : mémoriser la conso du cycle
+            // ✅ on sauvegarde et récupère la facture persistée
+            Facture saved = factureRepository.save(f);
+
+            // ✅ Envoi automatique par mail après création
+            try {
+                invoiceAppService.sendPdfByEmail(saved.getId());
+            } catch (Exception e) {
+                System.err.println("❌ Envoi de facture échoué pour " + c.getEmail() + " : " + e.getMessage());
+            }
+
             c.setLastSoldeNet(conso);
-
             c.setSoldeNet(0);
             clientRepository.save(c);
 
@@ -103,20 +107,7 @@ public class FacturationService {
 
         return new BillingRunResult(created, zero, dup, missingPrice);
     }
-    /**
-     * Génère la facture mensuelle pour un seul client donné.
-     * Règles :
-     *  - Client doit être POSTPAYE & ACTIF
-     *  - Skip si soldeNet <= 0
-     *  - Skip si coutSmsTtc null
-     *  - Skip si facture déjà existante pour ce mois
-     *  - Montant arrondi à 0 décimale (FCFA)
-     *
-     * @param clientId identifiant du client
-     * @param annee année de facturation (ex: 2025)
-     * @param mois mois de facturation (1 = janvier)
-     * @return un petit résumé de l’opération
-     */
+
     @Transactional
     public BillingRunResult genererFactureMensuellePourClient(String clientId, int annee, int mois) {
         Exercice exercice = exerciceRepository
@@ -133,7 +124,6 @@ public class FacturationService {
         Client c = clientRepository.findById(clientId)
                 .orElseThrow(() -> new IllegalArgumentException("Client introuvable : " + clientId));
 
-        // Vérifications préalables
         if (c.getTypeCompte() != TypeCompte.POSTPAYE)
             throw new IllegalStateException("Le client n'est pas en POSTPAYE.");
         if (c.getStatutCompte() != StatutCompte.ACTIF)
@@ -141,25 +131,23 @@ public class FacturationService {
 
         int conso = c.getSoldeNet() == null ? 0 : c.getSoldeNet();
         if (conso <= 0)
-            return new BillingRunResult(0, 1, 0, 0); // aucun SMS à facturer
+            return new BillingRunResult(0, 1, 0, 0);
 
         BigDecimal prixUnitaireInt = c.getCoutSmsTtc();
         if (prixUnitaireInt == null)
-            return new BillingRunResult(0, 0, 0, 1); // client sans tarif défini
+            return new BillingRunResult(0, 0, 0, 1);
 
         boolean dejaCree = factureRepository
                 .findByClientAndDateDebutAndDateFin(c, debut, fin)
                 .isPresent();
         if (dejaCree)
-            return new BillingRunResult(0, 0, 1, 0); // déjà facturé ce mois
+            return new BillingRunResult(0, 0, 1, 0);
 
-        // Calcul du montant (FCFA, arrondi)
         BigDecimal prixUnitaire = BigDecimal.valueOf(prixUnitaireInt.longValue());
         BigDecimal montant = prixUnitaire
                 .multiply(BigDecimal.valueOf(conso))
                 .setScale(0, RoundingMode.HALF_UP);
 
-        // Création facture
         Facture f = new Facture();
         f.setClient(c);
         f.setExercice(exercice);
@@ -169,24 +157,26 @@ public class FacturationService {
         f.setPrixUnitaire(prixUnitaire);
         f.setMontant(montant);
 
-        factureRepository.save(f);
+        Facture saved = factureRepository.save(f);
 
-        // ✅ Mémoriser la conso du cycle et remettre à zéro
+        try {
+            invoiceAppService.sendPdfByEmail(saved.getId());
+        } catch (Exception e) {
+            System.err.println("❌ Envoi facture client " + c.getEmail() + " : " + e.getMessage());
+        }
+
         c.setLastSoldeNet(conso);
         c.setSoldeNet(0);
         clientRepository.save(c);
 
-        return new BillingRunResult(1, 0, 0, 0); // 1 facture créée
+        return new BillingRunResult(1, 0, 0, 0);
     }
 
-    /**
-     * Récupère toutes les factures en base
-     */
     @Transactional(readOnly = true)
     public List<Facture> getAllFactures() {
         return factureRepository.findAll();
     }
-    // Petit DTO de résumé (mets-le dans un fichier séparé si tu préfères)
+
     public record BillingRunResult(int generated, int skippedZero, int skippedDuplicate, int skippedMissingPrice) {}
 
     @Transactional(readOnly = true)
@@ -205,6 +195,4 @@ public class FacturationService {
                 .map(FactureDTO::from)
                 .toList();
     }
-
-
 }

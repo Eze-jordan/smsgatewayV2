@@ -180,15 +180,14 @@ public class ClientService {
     /**
      * régénération de la clé API
      */
-    public String regenerateApiKey(String clientId) {
+      public Client regenerateApiKeyAndReturnClient(String clientId) {
         Client client = clientRepository.findById(clientId)
                 .orElseThrow(() -> new EntityNotFoundException("Client introuvable: " + clientId));
 
         assignNewApiKey(client);
-        clientRepository.save(client);
-
-        return client.getCleApi();
+        return clientRepository.save(client);
     }
+
     /**
      * Récupère tous les clients en DTO
      */

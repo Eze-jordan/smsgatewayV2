@@ -158,13 +158,15 @@ public class ClientController {
     }
 
     @PutMapping("/{id}/regenerate-api-key")
-    @Operation(summary = "Regenerate API Key", description = "Generate a new temporary API key (valid 30 minutes)")
+    @Operation(summary = "Regenerate API Key", description = "Generate a new API key (valid 5 years)")
     public ResponseEntity<Map<String, Object>> regenerateApiKey(@PathVariable String id) {
-        String newKey = clientService.regenerateApiKey(id);
+        // On régénère la clé et on récupère le client mis à jour
+        var client = clientService.regenerateApiKeyAndReturnClient(id);
+
         return ResponseEntity.ok(Map.of(
                 "message", "API key regenerated successfully",
-                "newApiKey", newKey,
-                "expiresAt", LocalDateTime.now().plusMinutes(30).toString()
+                "newApiKey", client.getCleApi(),
+                "expiresAt", client.getCleApiExpiration().toString()
         ));
     }
 

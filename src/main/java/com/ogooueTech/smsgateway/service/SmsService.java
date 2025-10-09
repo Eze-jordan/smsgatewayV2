@@ -15,16 +15,20 @@ import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Service
 @Transactional
 public class SmsService {
-
+    private static final AtomicInteger SEQUENCE = new AtomicInteger(new SecureRandom().nextInt(1000));
+    private static final SecureRandom RANDOM = new SecureRandom();
     private final SmsMessageRepository smsRepo;
     private final SmsRecipientRepository recRepo;
     private final ClientRepository clientRepo; // injection par constructeur uniquement
@@ -68,11 +72,18 @@ public class SmsService {
 
 
 
-    // Générateur ref 6 chiffres
-    private static final java.util.concurrent.atomic.AtomicLong LAST_REF =
-            new java.util.concurrent.atomic.AtomicLong(900000);
-    private String generateRef() { return String.format("%06d", LAST_REF.incrementAndGet()); }
-
+    /**
+     * Génère une référence courte, robuste et unique (6 à 8 caractères).
+     * Combinaison du temps, d’un compteur, et d’un peu d’aléatoire.
+     * Exemple : "A93724" ou "H12893"
+     */
+    private String generateRef() {
+        long timePart = Instant.now().toEpochMilli() % 100000; // 5 derniers chiffres du timestamp
+        int seqPart = SEQUENCE.getAndIncrement() % 1000;       // incrément cyclique
+        int randomPart = RANDOM.nextInt(90) + 10;              // deux chiffres aléatoires (10–99)
+        long combined = (timePart + seqPart + randomPart) % 999999; // borne à 6 chiffres
+        return String.format("%06d", combined);
+    }
     /* ---------- Création ---------- */
 
     // UNIDES

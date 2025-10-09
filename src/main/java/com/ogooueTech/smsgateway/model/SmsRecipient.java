@@ -4,7 +4,6 @@ import com.ogooueTech.smsgateway.enums.SmsStatus;
 import jakarta.persistence.*;
 
 import java.time.Instant;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Entity
 @Table(name = "sms_recipients")
@@ -12,48 +11,52 @@ public class SmsRecipient {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; // clé technique DB
+    private Long id;
 
-    @Column(unique = true, length = 6, nullable = false)
-    private String refDestinataire; // ex: "100001"
+    @Column(unique = true, length = 20, nullable = false)
+    private String refDestinataire;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "ref_sms")
     private SmsMessage sms;
 
-    @Column(length = 20, nullable = false)
+    @Column(length = 12, nullable = false)
     private String numero;
 
     @Enumerated(EnumType.STRING)
     private SmsStatus statut = SmsStatus.EN_ATTENTE;
 
-    private String lastError; // si ECHEC
+    private String lastError;
 
     @Column(updatable = false)
     private Instant createdAt;
 
     private Instant updatedAt;
 
-    // Générateur de référence sur 6 chiffres
-    private static final AtomicLong LAST_REF = new AtomicLong(100000);
-
     @PrePersist
     void prePersist() {
         if (this.refDestinataire == null) {
-            this.refDestinataire = String.format("%06d", LAST_REF.incrementAndGet());
+            // Exemple de ref courte : R + 4 derniers chiffres du timestamp + 3 chiffres aléatoires
+            long millis = System.currentTimeMillis() % 100000000L; // garde 8 derniers chiffres du temps
+            int random = (int) (Math.random() * 900) + 100; // nombre aléatoire sur 3 chiffres
+            this.refDestinataire = "R" + millis + random; // ex: R8456234112
         }
         this.createdAt = Instant.now();
         this.updatedAt = this.createdAt;
     }
+
 
     @PreUpdate
     void preUpdate() {
         this.updatedAt = Instant.now();
     }
 
-    // Getters / Setters
     public Long getId() {
         return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getRefDestinataire() {
@@ -100,7 +103,15 @@ public class SmsRecipient {
         return createdAt;
     }
 
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
+    }
+
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

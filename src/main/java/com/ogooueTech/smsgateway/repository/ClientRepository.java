@@ -31,6 +31,7 @@ public interface ClientRepository extends JpaRepository<Client, String> {
     List<Client> findByRaisonSocialeContainingIgnoreCase(String raisonSociale);
 
 
+
 }
 
 

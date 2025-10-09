@@ -7,7 +7,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -19,10 +18,11 @@ import java.util.Optional;
 public class ApiKeyFilter extends OncePerRequestFilter {
 
     private final ClientRepository clientRepository;
-    // ✅ Injection par constructeur explicite
+
     public ApiKeyFilter(ClientRepository clientRepository) {
         this.clientRepository = clientRepository;
     }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -31,37 +31,47 @@ public class ApiKeyFilter extends OncePerRequestFilter {
 
         String path = request.getServletPath();
 
-        // ✅ On ne protège que les endpoints SMS
-        if (path.startsWith("/api/V1/sms")) {
-            String apiKey = request.getHeader("X-API-Key");
+        // ✅ On ne protège que ces 3 endpoints SMS
+        if (path.equals("/api/V1/sms/unides")
+                || path.equals("/api/V1/sms/muldes")
+                || path.equals("/api/V1/sms/muldesp")) {
 
-            if (apiKey == null || apiKey.isBlank()) {
-                sendUnauthorized(response, "Clé API manquante");
-                return;
+            // Vérifie si un token JWT est déjà présent
+            String authHeader = request.getHeader("Authorization");
+            boolean hasJwt = (authHeader != null && authHeader.startsWith("Bearer "));
+
+            // Si pas de JWT, on exige une clé API
+            if (!hasJwt) {
+                String apiKey = request.getHeader("X-API-Key");
+
+                if (apiKey == null || apiKey.isBlank()) {
+                    sendUnauthorized(response, "Clé API manquante");
+                    return;
+                }
+
+                Optional<Client> clientOpt = clientRepository.findByCleApi(apiKey);
+
+                if (clientOpt.isEmpty()) {
+                    sendUnauthorized(response, "Clé API invalide");
+                    return;
+                }
+
+                Client client = clientOpt.get();
+
+                if (client.getStatutCompte() != StatutCompte.ACTIF) {
+                    sendUnauthorized(response, "Compte client suspendu ou archivé");
+                    return;
+                }
+
+                if (client.getCleApiExpiration() != null &&
+                        client.getCleApiExpiration().isBefore(LocalDateTime.now())) {
+                    sendUnauthorized(response, "Clé API expirée");
+                    return;
+                }
+
+                // ✅ Clé valide → autoriser la requête
+                request.setAttribute("client", client);
             }
-
-            Optional<Client> clientOpt = clientRepository.findByCleApi(apiKey);
-
-            if (clientOpt.isEmpty()) {
-                sendUnauthorized(response, "Clé API invalide");
-                return;
-            }
-
-            Client client = clientOpt.get();
-
-            if (client.getStatutCompte() != StatutCompte.ACTIF) {
-                sendUnauthorized(response, "Compte client suspendu ou archivé");
-                return;
-            }
-
-            if (client.getCleApiExpiration() != null &&
-                    client.getCleApiExpiration().isBefore(LocalDateTime.now())) {
-                sendUnauthorized(response, "Clé API expirée");
-                return;
-            }
-
-            // ✅ Clé valide → on autorise la requête
-            request.setAttribute("client", client);
         }
 
         filterChain.doFilter(request, response);

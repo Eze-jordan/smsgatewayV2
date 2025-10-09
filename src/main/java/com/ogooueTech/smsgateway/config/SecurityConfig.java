@@ -70,7 +70,9 @@ public class SecurityConfig {
                                 "/v3/api-docs/**"
                         ).permitAll()
                         // ✅ Les endpoints SMS sont maintenant protégés par clé API
-                        .requestMatchers("/api/V1/sms/**").authenticated()
+                        .requestMatchers("/api/V1/sms/unides",
+                                "/api/V1/sms/muldes",
+                                "/api/V1/sms/muldesp").authenticated()
                         .anyRequest().authenticated()
 
                 )

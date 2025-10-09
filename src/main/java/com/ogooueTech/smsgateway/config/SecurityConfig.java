@@ -69,6 +69,10 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
+                        .requestMatchers("/api/V1/sms/unides",
+                                "/api/V1/sms/muldes",
+                                "/api/V1/sms/muldesp").permitAll()
+
                         // ✅ Les endpoints SMS sont maintenant protégés par clé API
                         .requestMatchers("/api/V1/sms/unides",
                                 "/api/V1/sms/muldes",

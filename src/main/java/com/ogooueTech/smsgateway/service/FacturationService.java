@@ -103,6 +103,81 @@ public class FacturationService {
 
         return new BillingRunResult(created, zero, dup, missingPrice);
     }
+    /**
+     * Génère la facture mensuelle pour un seul client donné.
+     * Règles :
+     *  - Client doit être POSTPAYE & ACTIF
+     *  - Skip si soldeNet <= 0
+     *  - Skip si coutSmsTtc null
+     *  - Skip si facture déjà existante pour ce mois
+     *  - Montant arrondi à 0 décimale (FCFA)
+     *
+     * @param clientId identifiant du client
+     * @param annee année de facturation (ex: 2025)
+     * @param mois mois de facturation (1 = janvier)
+     * @return un petit résumé de l’opération
+     */
+    @Transactional
+    public BillingRunResult genererFactureMensuellePourClient(String clientId, int annee, int mois) {
+        Exercice exercice = exerciceRepository
+                .findByAnneeAndStatut(annee, StatutExercice.OUVERT)
+                .orElseThrow(() -> new IllegalStateException("Exercice " + annee + " non trouvé ou non OUVERT"));
+
+        CalendrierFacturation cal = calendrierRepository
+                .findByExerciceAndMois(exercice, mois)
+                .orElseThrow(() -> new IllegalStateException("Calendrier absent pour " + annee + "-" + mois));
+
+        LocalDate debut = cal.getDateDebutConsommation();
+        LocalDate fin = cal.getDateFinConsommation();
+
+        Client c = clientRepository.findById(clientId)
+                .orElseThrow(() -> new IllegalArgumentException("Client introuvable : " + clientId));
+
+        // Vérifications préalables
+        if (c.getTypeCompte() != TypeCompte.POSTPAYE)
+            throw new IllegalStateException("Le client n'est pas en POSTPAYE.");
+        if (c.getStatutCompte() != StatutCompte.ACTIF)
+            throw new IllegalStateException("Le compte du client est inactif ou suspendu.");
+
+        int conso = c.getSoldeNet() == null ? 0 : c.getSoldeNet();
+        if (conso <= 0)
+            return new BillingRunResult(0, 1, 0, 0); // aucun SMS à facturer
+
+        BigDecimal prixUnitaireInt = c.getCoutSmsTtc();
+        if (prixUnitaireInt == null)
+            return new BillingRunResult(0, 0, 0, 1); // client sans tarif défini
+
+        boolean dejaCree = factureRepository
+                .findByClientAndDateDebutAndDateFin(c, debut, fin)
+                .isPresent();
+        if (dejaCree)
+            return new BillingRunResult(0, 0, 1, 0); // déjà facturé ce mois
+
+        // Calcul du montant (FCFA, arrondi)
+        BigDecimal prixUnitaire = BigDecimal.valueOf(prixUnitaireInt.longValue());
+        BigDecimal montant = prixUnitaire
+                .multiply(BigDecimal.valueOf(conso))
+                .setScale(0, RoundingMode.HALF_UP);
+
+        // Création facture
+        Facture f = new Facture();
+        f.setClient(c);
+        f.setExercice(exercice);
+        f.setDateDebut(debut);
+        f.setDateFin(fin);
+        f.setConsommationSms(conso);
+        f.setPrixUnitaire(prixUnitaire);
+        f.setMontant(montant);
+
+        factureRepository.save(f);
+
+        // ✅ Mémoriser la conso du cycle et remettre à zéro
+        c.setLastSoldeNet(conso);
+        c.setSoldeNet(0);
+        clientRepository.save(c);
+
+        return new BillingRunResult(1, 0, 0, 0); // 1 facture créée
+    }
 
     /**
      * Récupère toutes les factures en base

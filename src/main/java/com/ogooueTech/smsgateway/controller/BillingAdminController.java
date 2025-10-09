@@ -100,6 +100,16 @@ public class BillingAdminController {
         return ResponseEntity.ok(result);
     }
 
+    @PostMapping("/facturer/{clientId}/{annee}/{mois}")
+    public ResponseEntity<?> facturerUnClient(
+            @PathVariable String clientId,
+            @PathVariable int annee,
+            @PathVariable int mois) {
+
+        var result = facturationService.genererFactureMensuellePourClient(clientId, annee, mois);
+        return ResponseEntity.ok(result);
+    }
+
     /**
      * View the billing calendar of an open fiscal year.
      */

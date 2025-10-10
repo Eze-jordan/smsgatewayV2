@@ -163,7 +163,9 @@ public class SmsService {
     /* ---------- Envoi ---------- */
 
     public void envoyerImmediate(SmsMessage sms) {
-        // ===== AJOUT: verrouillage client + règles PRE/POST-payé =====
+        // 🔒 Ignore si déjà traité
+        if (sms.getStatut() == SmsStatus.ENVOYE) return;
+
         Client client = clientRepo.lockById(sms.getClientId())
                 .orElseThrow(() -> new IllegalArgumentException("Client introuvable: " + sms.getClientId()));
 
@@ -176,20 +178,14 @@ public class SmsService {
             recs = recRepo.findBySms_RefAndStatut(sms.getRef(), SmsStatus.EN_ATTENTE);
             toSend = recs.size();
             if (toSend == 0) {
-                sms.setStatut(SmsStatus.EN_ATTENTE);
-                smsRepo.save(sms);
+                // Aucun destinataire restant → rien à faire
                 return;
             }
         } else {
             return;
         }
 
-        // Prépayé : débiter avant l’envoi (bloque si insuffisant)
-        // if (isPrepaye(client)) {
-        //     debitPrepayeOuFail(client, toSend);
-        // }
-
-        // Envoi effectif
+        // Envoi effectif (on marque en attente pour le cron)
         if (sms.getType() == SmsType.UNIDES) {
             envoyerUnitaire(sms.getDestinataire(), sms);
         } else {
@@ -198,13 +194,13 @@ public class SmsService {
             }
         }
 
-        // Postpayé : incrémenter consommation réelle
-        // if (isPostpaye(client)) {
-        //     creditPostpaye(client, toSend);
-        // }
-
+        // ✅ Ne change PAS le compteur ici (incrément se fera dans markAsSent)
+        // ✅ Laisse le statut EN_ATTENTE pour la passerelle externe
+        sms.setStatut(SmsStatus.EN_ATTENTE);
         smsRepo.save(sms);
     }
+
+
     public List<SmsMessage> getAllPendingMessages() {
         return smsRepo.findByStatut(SmsStatus.EN_ATTENTE);
     }
@@ -214,36 +210,31 @@ public class SmsService {
         SmsMessage sms = smsRepo.findByRef(ref)
                 .orElseThrow(() -> new IllegalArgumentException("SMS introuvable avec ref: " + ref));
 
-        // Récupérer le client
+        // 🔒 Ignore si déjà envoyé
+        if (sms.getStatut() == SmsStatus.ENVOYE) return;
+
         Client client = clientRepo.lockById(sms.getClientId())
                 .orElseThrow(() -> new IllegalArgumentException("Client introuvable: " + sms.getClientId()));
 
-        // Récupérer les destinataires encore en attente
         List<SmsRecipient> recs = recRepo.findBySms_RefAndStatut(ref, SmsStatus.EN_ATTENTE);
-
         int toDebit = recs.size();
-        if (toDebit <= 0) {
-            // Aucun destinataire restant → rien à faire
-            return;
-        }
+        if (toDebit <= 0) return;
 
-        // Si client est prépayé → débiter maintenant
         if (isPrepaye(client)) {
             debitPrepayeOuFail(client, toDebit);
         }
 
-        // Mettre à jour le statut du SMS
-        sms.setStatut(SmsStatus.ENVOYE);
+        // ✅ Incrément uniquement ici
         sms.setNbDejaEnvoye((sms.getNbDejaEnvoye() == null ? 0 : sms.getNbDejaEnvoye()) + toDebit);
+        sms.setStatut(SmsStatus.ENVOYE);
         smsRepo.save(sms);
 
-        // Mettre à jour les destinataires
+        // ✅ Marque les destinataires comme envoyés
         for (SmsRecipient r : recs) {
             r.setStatut(SmsStatus.ENVOYE);
             recRepo.save(r);
         }
 
-        // Si client est postpayé → incrémenter consommation réelle
         if (isPostpaye(client)) {
             creditPostpaye(client, toDebit);
         }
@@ -325,17 +316,19 @@ public class SmsService {
     }
 
 
-    /* ---------- Mock passerelle ---------- */
     private void envoyerUnitaire(String numero, SmsMessage sms) {
-        int current = sms.getNbDejaEnvoye() == null ? 0 : sms.getNbDejaEnvoye();
-        sms.setNbDejaEnvoye(current + 1);
+        // Pour un SMS unitaire (UNIDES)
+        SmsRecipient r = new SmsRecipient();
+        r.setSms(sms);
+        r.setNumero(numero);
+        r.setStatut(SmsStatus.EN_ATTENTE);
+        recRepo.save(r);
     }
+
 
     private void envoyerUnitaire(String numero, SmsMessage sms, SmsRecipient r) {
         r.setStatut(SmsStatus.EN_ATTENTE);
         recRepo.save(r);
-        int current = sms.getNbDejaEnvoye() == null ? 0 : sms.getNbDejaEnvoye();
-        sms.setNbDejaEnvoye(current + 1);
     }
 
     /* ---------- Helpers ---------- */

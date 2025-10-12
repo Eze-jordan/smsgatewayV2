@@ -1,29 +1,33 @@
 services:
-  db:
-    image: postgres:15
-    container_name: postgres_smsgatewaydb
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 123456789
-      POSTGRES_DB: smsgatewaydb
-    ports:
-      - "5438:5432"
-    volumes:
-      - db-data:/var/lib/postgresql/data
-    networks:
-      - smsgateway-net
+ # db:
+ #   image: postgres:15
+ #   container_name: postgres_smsgatewaydb
+ #   environment:
+ #     POSTGRES_USER: postgres
+ #     POSTGRES_PASSWORD: 123456789
+ #     POSTGRES_DB: smsgatewaydb
+ #   ports:
+ #     - "5438:5432"
+ #   volumes:
+ #     - db-data:/var/lib/postgresql/data
+ #   networks:
+ #     - smsgateway-net
 
   app:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: smsgateway_app
-    depends_on:
-      - db
+
     ports:
       - "9088:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/smsgatewaydb
+      SPRING_DATASOURCE_URL: jdbc:postgresql://86.105.252.192:5432/smsgatewaydb
+      SPRING_DATASOURCE_USERNAME: mon_user
+      SPRING_DATASOURCE_PASSWORD: e0d9249d4b3e4156f803dba1faf98ed52d9af65f32192a69abe6d3eaca416607
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
     networks:
       - smsgateway-net
 
@@ -32,3 +36,4 @@ volumes:
 
 networks:
   smsgateway-net:
+    driver: bridge

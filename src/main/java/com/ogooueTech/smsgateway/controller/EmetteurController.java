@@ -34,7 +34,27 @@ public class EmetteurController {
         );
         return ResponseEntity.ok(response);
     }
+    @PutMapping("/{clientId}/{id}")
+    @Operation(summary = "Modifier un émetteur d’un client spécifique")
+    public ResponseEntity<EmetteurResponse> update(
+            @PathVariable("clientId") String clientId,
+            @PathVariable("id") String emetteurId,
+            @RequestParam String nouveauNom
+    ) {
+        Emetteur updated = service.update(clientId, emetteurId, nouveauNom);
+        EmetteurResponse response = new EmetteurResponse(updated.getId(), updated.getNom(), updated.getCreatedAt());
+        return ResponseEntity.ok(response);
+    }
 
+    @DeleteMapping("/{clientId}/{id}")
+    @Operation(summary = "Supprimer un émetteur d’un client spécifique")
+    public ResponseEntity<Void> delete(
+            @PathVariable("clientId") String clientId,
+            @PathVariable("id") String emetteurId
+    ) {
+        service.delete(clientId, emetteurId);
+        return ResponseEntity.noContent().build();
+    }
 
     @GetMapping("/client/{clientId}")
     @Operation(summary = "Lister les émetteurs d’un client")

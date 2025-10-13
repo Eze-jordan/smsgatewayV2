@@ -67,6 +67,7 @@ public class SecurityConfig {
                                 "/api/V1/sms/{ref}/mark-sent",
                                 "/api/V1/sms/pending",
                                 "/swagger-ui/**",
+                                "/send-test-email",
                                 "/v3/api-docs/**"
                         ).permitAll()
                         .requestMatchers("/api/V1/sms/unides",

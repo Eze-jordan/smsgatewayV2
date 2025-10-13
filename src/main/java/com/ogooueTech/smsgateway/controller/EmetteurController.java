@@ -1,6 +1,7 @@
 package com.ogooueTech.smsgateway.controller;
 
 import com.ogooueTech.smsgateway.dtos.CreateEmetteurRequest;
+import com.ogooueTech.smsgateway.dtos.EmetteurResponse;
 import com.ogooueTech.smsgateway.model.Emetteur;
 import com.ogooueTech.smsgateway.service.EmetteurService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,15 +24,26 @@ public class EmetteurController {
 
     @PostMapping
     @Operation(summary = "Créer un nouvel émetteur pour un client")
-    public ResponseEntity<Emetteur> create(@RequestBody CreateEmetteurRequest req) {
+    public ResponseEntity<EmetteurResponse> create(@RequestBody CreateEmetteurRequest req) {
         Emetteur emetteur = service.create(req.clientId(), req.nom());
-        return ResponseEntity.ok(emetteur);
+        // Transformer en DTO
+        EmetteurResponse response = new EmetteurResponse(
+                emetteur.getId(),
+                emetteur.getNom(),
+                emetteur.getCreatedAt()
+        );
+        return ResponseEntity.ok(response);
     }
 
 
     @GetMapping("/client/{clientId}")
     @Operation(summary = "Lister les émetteurs d’un client")
-    public ResponseEntity<List<Emetteur>> listByClient(@PathVariable String clientId) {
-        return ResponseEntity.ok(service.listByClient(clientId));
+    public ResponseEntity<List<EmetteurResponse>> listByClient(@PathVariable String clientId) {
+        List<Emetteur> emetteurs = service.listByClient(clientId);
+        List<EmetteurResponse> response = emetteurs.stream()
+                .map(e -> new EmetteurResponse(e.getId(), e.getNom(), e.getCreatedAt()))
+                .toList();
+        return ResponseEntity.ok(response);
     }
+
 }

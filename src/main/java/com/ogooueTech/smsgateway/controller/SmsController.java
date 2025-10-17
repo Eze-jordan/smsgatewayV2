@@ -7,6 +7,9 @@ import com.ogooueTech.smsgateway.enums.SmsType;
 import com.ogooueTech.smsgateway.model.Client;
 import com.ogooueTech.smsgateway.model.SmsMessage;
 import com.ogooueTech.smsgateway.service.SmsService;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +19,7 @@ import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
@@ -166,9 +170,83 @@ public class SmsController {
        ===============  CONSULTATION  =================
        =============================================== */
 
+    /**
+     * Récupère tous les SMS en attente avec leurs destinataires
+     */
     @GetMapping("/pending")
-    public ResponseEntity<List<SmsMessage>> getPendingMessages() {
-        return ResponseEntity.ok(smsService.getAllPendingMessages());
+    @Operation(summary = "Obtenir tous les SMS en attente",
+            description = "Retourne tous les SMS en statut EN_ATTENTE avec leurs destinataires, filtrés selon les règles métier")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Liste des SMS en attente récupérée avec succès"),
+            @ApiResponse(responseCode = "204", description = "Aucun SMS en attente trouvé"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne du serveur")
+    })
+    public ResponseEntity<List<SmsService.PendingSmsDetails>> getAllPendingSms() {
+        List<SmsService.PendingSmsDetails> pendingSms = smsService.getPendingSmsOptimized();
+
+        if (pendingSms.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        return ResponseEntity.ok(pendingSms);
+    }
+
+
+    /**
+     * Récupère les statistiques des SMS en attente
+     */
+    @GetMapping("/stats")
+    @Operation(summary = "Obtenir les statistiques des SMS en attente",
+            description = "Retourne les statistiques globales des SMS en attente")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Statistiques récupérées avec succès")
+    })
+    public ResponseEntity<Map<String, Object>> getPendingSmsStats() {
+        List<SmsService.PendingSmsDetails> pendingSms = smsService.getPendingSmsOptimized();
+
+        Map<String, Object> stats = Map.of(
+                "totalSms", pendingSms.size(),
+                "totalDestinataires", pendingSms.stream().mapToInt(SmsService.PendingSmsDetails::getTotalRecipients).sum(),
+                "parType", pendingSms.stream().collect(Collectors.groupingBy(
+                        details -> details.getSms().getType().name(),
+                        Collectors.summarizingInt(SmsService.PendingSmsDetails::getTotalRecipients)
+                )),
+                "details", pendingSms.stream().map(details -> Map.of(
+                        "ref", details.getSms().getRef(),
+                        "type", details.getSms().getType(),
+                        "destinataires", details.getTotalRecipients(),
+                        "clientId", details.getSms().getClientId(),
+                        "dateCreation", details.getSms().getCreatedAt()
+                )).collect(Collectors.toList())
+        );
+
+        return ResponseEntity.ok(stats);
+    }
+
+    /**
+     * Récupère les SMS en attente pour un client spécifique
+     */
+    @GetMapping("/client/{clientId}")
+    @Operation(summary = "Obtenir les SMS en attente d'un client",
+            description = "Retourne tous les SMS en attente pour un client spécifique")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "SMS du client récupérés avec succès"),
+            @ApiResponse(responseCode = "204", description = "Aucun SMS en attente pour ce client")
+    })
+    public ResponseEntity<List<SmsService.PendingSmsDetails>> getPendingSmsByClient(
+            @Parameter(description = "ID du client", required = true, example = "client-123")
+            @PathVariable String clientId) {
+
+        List<SmsService.PendingSmsDetails> allPending = smsService.getPendingSmsOptimized();
+        List<SmsService.PendingSmsDetails> clientPending = allPending.stream()
+                .filter(details -> clientId.equals(details.getSms().getClientId()))
+                .collect(Collectors.toList());
+
+        if (clientPending.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        return ResponseEntity.ok(clientPending);
     }
 
     @PutMapping("/{ref}/mark-sent")

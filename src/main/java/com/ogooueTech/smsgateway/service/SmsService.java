@@ -21,6 +21,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -95,7 +96,7 @@ public class SmsService {
         sms.setType(SmsType.UNIDES);
         sms.setClientId(clientId);
         sms.setEmetteur(emetteur);
-        sms.setDestinataire(normalizePhone(destinataire));
+        sms.setDestinataire(normaliserNumero(destinataire));
         sms.setCorps(corps);
         sms.setStatut(SmsStatus.EN_ATTENTE);
         sms.setNbDejaEnvoye(0);
@@ -150,7 +151,7 @@ public class SmsService {
 
     private void persistRecipients(SmsMessage sms, List<String> nums) {
         for (String n : nums) {
-            String normalized = normalizePhone(n);
+            String normalized = normaliserNumero(n);
             validatePhone(normalized);
             SmsRecipient r = new SmsRecipient();
             r.setSms(sms);
@@ -201,9 +202,145 @@ public class SmsService {
     }
 
 
-    public List<SmsMessage> getAllPendingMessages() {
-        return smsRepo.findByStatut(SmsStatus.EN_ATTENTE);
-    }
+        /**
+         * Récupère tous les SMS en attente avec leurs destinataires complets
+         * Version optimisée en une seule requête
+         */
+        public List<PendingSmsDetails> getPendingSmsOptimized() {
+            LocalDate today = LocalDate.now();
+
+            // 1. Récupérer tous les SMS en attente
+            List<SmsMessage> allPending = smsRepo.findByStatut(SmsStatus.EN_ATTENTE);
+
+            // 2. Filtrer selon les règles métier
+            List<SmsMessage> filteredSms = allPending.stream()
+                    .filter(sms -> shouldIncludeInPending(sms, today))
+                    .collect(Collectors.toList());
+
+            if (filteredSms.isEmpty()) {
+                return List.of();
+            }
+
+            // 3. Récupérer tous les destinataires en une seule requête
+            List<String> smsRefs = filteredSms.stream()
+                    .map(SmsMessage::getRef)
+                    .collect(Collectors.toList());
+
+            // Récupère tous les SmsRecipient pour ces SMS
+            List<SmsRecipient> allRecipients = recRepo.findBySms_RefIn(smsRefs);
+
+            // Groupe par référence SMS et filtre seulement ceux en statut EN_ATTENTE
+            Map<String, List<String>> recipientsBySmsRef = allRecipients.stream()
+                    .filter(recipient -> recipient.getStatut() == SmsStatus.EN_ATTENTE)
+                    .collect(Collectors.groupingBy(
+                            recipient -> recipient.getSms().getRef(),
+                            Collectors.mapping(SmsRecipient::getNumero, Collectors.toList())
+                    ));
+
+            // 4. Construire le résultat final
+            return filteredSms.stream()
+                    .map(sms -> {
+                        PendingSmsDetails details = new PendingSmsDetails();
+                        details.setSms(sms);
+
+                        List<String> recipients;
+                        if (sms.getType() == SmsType.UNIDES) {
+                            // Pour UNIDES, utiliser le champ destinataire direct
+                            recipients = sms.getDestinataire() != null ?
+                                    List.of(sms.getDestinataire()) :
+                                    List.of();
+                        } else {
+                            // Pour MULDES et MULDESP, utiliser la table des destinataires
+                            recipients = recipientsBySmsRef.getOrDefault(sms.getRef(), List.of());
+                        }
+
+                        details.setRecipients(recipients);
+                        details.setTotalRecipients(recipients.size());
+                        return details;
+                    })
+                    .collect(Collectors.toList());
+        }
+
+        /**
+         * Détermine si un SMS doit être inclus dans la liste des en attente
+         */
+        private boolean shouldIncludeInPending(SmsMessage sms, LocalDate today) {
+            // Pour les SMS UNIDES et MULDES standard, toujours inclus s'ils ont des destinataires
+            if (sms.getType() == SmsType.UNIDES) {
+                return sms.getDestinataire() != null && !sms.getDestinataire().isBlank();
+            }
+
+            if (sms.getType() == SmsType.MULDES) {
+                // Vérifier s'il reste des destinataires en attente pour ce SMS
+                return recRepo.existsBySms_RefAndStatut(sms.getRef(), SmsStatus.EN_ATTENTE);
+            }
+
+            // Pour les SMS MULDESP (planifiés), vérifier la date et le quota
+            if (sms.getType() == SmsType.MULDESP) {
+                // Vérifier si nous sommes dans la période de planification
+                if (sms.getDateDebutEnvoi() != null && sms.getDateFinEnvoi() != null) {
+                    boolean isWithinDateRange = !today.isBefore(sms.getDateDebutEnvoi()) &&
+                            !today.isAfter(sms.getDateFinEnvoi());
+
+                    if (!isWithinDateRange) {
+                        return false; // En dehors de la période de planification
+                    }
+
+                    // Vérifier si le quota du jour n'est pas atteint
+                    int dejaEnvoye = sms.getNbDejaEnvoye() != null ? sms.getNbDejaEnvoye() : 0;
+                    int quotaJournalier = sms.getNbParJour() != null ? sms.getNbParJour() : Integer.MAX_VALUE;
+
+                    // Vérifier s'il reste des destinataires en attente
+                    boolean hasPendingRecipients = recRepo.existsBySms_RefAndStatut(sms.getRef(), SmsStatus.EN_ATTENTE);
+
+                    return dejaEnvoye < quotaJournalier && hasPendingRecipients;
+                }
+            }
+
+            return false;
+        }
+
+        /**
+         * Classe interne pour retourner les détails complets des SMS en attente
+         */
+        public static class PendingSmsDetails {
+            private SmsMessage sms;
+            private List<String> recipients;
+            private int totalRecipients;
+
+            // Constructeurs
+            public PendingSmsDetails() {}
+
+            public PendingSmsDetails(SmsMessage sms, List<String> recipients) {
+                this.sms = sms;
+                this.recipients = recipients;
+                this.totalRecipients = recipients != null ? recipients.size() : 0;
+            }
+
+            // Getters et setters
+            public SmsMessage getSms() { return sms; }
+            public void setSms(SmsMessage sms) { this.sms = sms; }
+
+            public List<String> getRecipients() { return recipients; }
+            public void setRecipients(List<String> recipients) {
+                this.recipients = recipients;
+                this.totalRecipients = recipients != null ? recipients.size() : 0;
+            }
+
+            public int getTotalRecipients() { return totalRecipients; }
+            public void setTotalRecipients(int totalRecipients) { this.totalRecipients = totalRecipients; }
+
+            @Override
+            public String toString() {
+                return String.format("PendingSmsDetails{ref=%s, type=%s, recipients=%d}",
+                        sms != null ? sms.getRef() : "null",
+                        sms != null ? sms.getType() : "null",
+                        totalRecipients);
+            }
+        }
+
+        // ... le reste de votre code existant ...
+
 
     @Transactional
     public void markAsSent(String ref) {
@@ -332,12 +469,32 @@ public class SmsService {
     }
 
     /* ---------- Helpers ---------- */
-    private String normalizePhone(String number) {
-        return number == null ? "" : number.trim().replaceAll("[\\s\\-\\.()]", "");
-    }
     private void validatePhone(String number) {
-        if (number == null || !number.matches("^\\+?\\d{8,15}$"))
-            throw new IllegalArgumentException("Numéro invalide");
+        if (number == null || number.isBlank()) {
+            throw new IllegalArgumentException("Numéro invalide: ne peut pas être vide");
+        }
+
+        // Vérifie la longueur (6-24 caractères)
+        if (number.length() < 6 || number.length() > 24) {
+            throw new IllegalArgumentException(
+                    "Numéro invalide: doit contenir entre 6 et 24 caractères. Longueur actuelle: " + number.length()
+            );
+        }
+
+        // Vérifie le format: commence par + optionnel, suivi uniquement de chiffres
+        if (!number.matches("^\\+?\\d+$")) {
+            throw new IllegalArgumentException(
+                    "Numéro invalide: doit contenir uniquement des chiffres et optionnellement un + au début"
+            );
+        }
+
+        // Vérifie qu'après le + il y a au moins 6 chiffres
+        String chiffresSeuls = number.replace("+", "");
+        if (chiffresSeuls.length() < 6) {
+            throw new IllegalArgumentException(
+                    "Numéro invalide: doit contenir au moins 6 chiffres. Chiffres actuels: " + chiffresSeuls.length()
+            );
+        }
     }
     private void validateBody(String body) {
         if (body == null || body.isBlank() || body.length() > 160)
@@ -413,10 +570,16 @@ public class SmsService {
 
     /** Normalise un numéro (ex: retire + et espaces, préfixe 241 si format court) */
     public static String normaliserNumero(String n) {
-        String s = n.replace(" ", "").replace("+", "");
-        if (s.length() <= 9 && !s.startsWith("241")) s = "241" + s;
+        if (n == null || n.isBlank()) {
+            return n;
+        }
+
+        // Garde seulement les chiffres et le + (en début de numéro)
+        String s = n.replaceAll("\\s", ""); // Supprime seulement les espaces
+
         return s;
     }
+
 
     public Page<SmsMuldesResponse> getMuldesWithParsedRecipients(
             String clientId, Integer page, Integer size, SmsStatus statut) {

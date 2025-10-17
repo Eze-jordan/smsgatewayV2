@@ -20,7 +20,7 @@ public class SmsRecipient {
     @JoinColumn(name = "ref_sms")
     private SmsMessage sms;
 
-    @Column(length = 12, nullable = false)
+    @Column(length = 25, nullable = false)
     private String numero;
 
     @Enumerated(EnumType.STRING)

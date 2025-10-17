@@ -17,7 +17,7 @@ public class SmsMessage {
     @Column(nullable = false)
     private SmsType type;
 
-    @Column(length = 20) // E.164 ~ 15
+    @Column(length = 25) // E.164 ~ 15
     private String destinataire;
 
     @Column(nullable = false, length = 160)

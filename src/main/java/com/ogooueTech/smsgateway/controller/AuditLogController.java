@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/audit-logs")
+@RequestMapping("/api/V1/audit-logs")
 @Tag(name = "AuditLogs", description = "Journal des actions (audit)")
 public class AuditLogController {
 

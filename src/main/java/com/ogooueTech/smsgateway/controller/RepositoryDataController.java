@@ -11,7 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/referentiel")
+@RequestMapping("/api/V1/referentiel")
 @Tag(name = "Repository", description = "API for managing repository entries")
 public class RepositoryDataController {
 

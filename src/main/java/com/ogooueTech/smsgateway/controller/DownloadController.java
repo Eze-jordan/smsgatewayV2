@@ -1,5 +1,6 @@
 package com.ogooueTech.smsgateway.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -14,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 @RestController
 @RequestMapping("/api/V1")
+@Tag(name = "Documentation SMS Gateway", description = "Télécharger la documentation api ")
 public class DownloadController {
 
     private final Path fileStorageLocation = Paths.get("src/main/resources/static/documents")

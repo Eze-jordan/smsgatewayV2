@@ -95,7 +95,6 @@ public class SecurityConfig {
 
         // ✅ On autorise plusieurs domaines + wildcard (*)
         configuration.addAllowedOriginPattern("http://localhost:3001");
-        configuration.addAllowedOriginPattern("http://localhost:4200");
         configuration.addAllowedOriginPattern("*"); // tous les domaines externes autorisés
 
         // ✅ Autoriser toutes les méthodes HTTP

@@ -57,6 +57,7 @@ public class SecurityConfig {
                                 "/api/V1/managers/create"
                         ).permitAll()
                         .requestMatchers(
+                                "/api/V1/download/**",
                                 "/api/V1/managers/activation",
                                 "/api/V1/managers/resend-otp",
                                 "/api/V1/auth/**",

@@ -749,6 +749,66 @@ public class SmsService {
                 ))
                 .toList();
     }
+
+    /**
+     * Récupère tous les SMS programés d'un client avec les détails des destinataires
+     */
+    public List<SmsMuldesResponse> getAllMuldespWithDetails(String clientId) {
+        return getAllMuldespWithDetailsByFilters(clientId, null, null, null, null, null);
+    }
+
+    /**
+     * Récupère les SMS programés avec filtres et détails des destinataires
+     */
+    public List<SmsMuldesResponse> getAllMuldespWithDetailsByFilters(
+            String clientId,
+            LocalDate dateDebut,
+            LocalDate dateFin,
+            Integer nbParJour,
+            Integer intervalleMinutes,
+            SmsStatus statut) {
+
+        // Récupérer les messages avec filtres
+        List<SmsMessage> messages;
+        if (dateDebut == null && dateFin == null && nbParJour == null && intervalleMinutes == null && statut == null) {
+            messages = smsRepo.findByClientIdAndType(clientId, SmsType.MULDESP, Pageable.unpaged()).getContent();
+        } else {
+            messages = smsRepo.findMuldespWithFilters(
+                    clientId, dateDebut, dateFin, nbParJour, intervalleMinutes, statut, Pageable.unpaged()
+            ).getContent();
+        }
+
+        // Charger les destinataires
+        List<String> refs = messages.stream().map(SmsMessage::getRef).toList();
+        var allRecipients = recRepo.findBySms_RefIn(refs);
+
+        var recipientsByRef = allRecipients.stream()
+                .collect(Collectors.groupingBy(
+                        r -> r.getSms().getRef(),
+                        Collectors.mapping(SmsRecipient::getNumero, Collectors.toList())
+                ));
+
+        // Construire les réponses
+        return messages.stream()
+                .map(m -> new SmsMuldesResponse(
+                        m.getRef(),
+                        m.getClientId(),
+                        m.getEmetteur(),
+                        m.getCorps(),
+                        m.getType(),
+                        m.getStatut(),
+                        m.getCreatedAt(),
+                        recipientsByRef.getOrDefault(m.getRef(), List.of()),
+                        // Ajouter les champs de planification
+                        m.getDateDebutEnvoi(),
+                        m.getDateFinEnvoi(),
+                        m.getNbParJour(),
+                        m.getIntervalleMinutes()
+                ))
+                .toList();
+    }
+
+
     /**
      * Supprime un SMS spécifique d'un client par sa référence
      */

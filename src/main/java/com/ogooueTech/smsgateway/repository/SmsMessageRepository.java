@@ -11,6 +11,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 
+import java.net.URLConnection;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -72,4 +74,21 @@ public interface SmsMessageRepository extends JpaRepository<SmsMessage, String> 
     // Méthodes pour trouver un SMS spécifique d'un client
     Optional<SmsMessage> findByRefAndClientId(String ref, String clientId);
 
-}
+    /**
+     * Recherche des SMS programés avec filtres
+     */
+    @Query("SELECT s FROM SmsMessage s WHERE " +
+            "s.clientId = :clientId AND s.type = com.ogooueTech.smsgateway.enums.SmsType.MULDESP " +
+            "AND (:dateDebut IS NULL OR s.dateDebutEnvoi = :dateDebut) " +
+            "AND (:dateFin IS NULL OR s.dateFinEnvoi = :dateFin) " +
+            "AND (:nbParJour IS NULL OR s.nbParJour = :nbParJour) " +
+            "AND (:intervalleMinutes IS NULL OR s.intervalleMinutes = :intervalleMinutes) " +
+            "AND (:statut IS NULL OR s.statut = :statut)")
+    Page<SmsMessage> findMuldespWithFilters(
+            @Param("clientId") String clientId,
+            @Param("dateDebut") LocalDate dateDebut,
+            @Param("dateFin") LocalDate dateFin,
+            @Param("nbParJour") Integer nbParJour,
+            @Param("intervalleMinutes") Integer intervalleMinutes,
+            @Param("statut") SmsStatus statut,
+            Pageable pageable);}

@@ -10,6 +10,7 @@ import com.ogooueTech.smsgateway.service.SmsService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -328,4 +329,63 @@ public class SmsController {
     private boolean isBlank(String s) {
         return s == null || s.isBlank();
     }
+
+    /**
+     * Supprime tous les SMS d'un client (tous types)
+     */
+    @DeleteMapping("/client/{clientId}/all")
+    public ResponseEntity<?> deleteAllSmsByClient(@PathVariable String clientId) {
+        try {
+            smsService.deleteAllSmsByClient(clientId);
+            return ResponseEntity.ok()
+                    .body(Map.of(
+                            "success", true,
+                            "message", "Tous les SMS du client " + clientId + " ont été supprimés avec succès",
+                            "clientId", clientId
+                    ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of(
+                            "success", false,
+                            "error", "Erreur lors de la suppression des SMS: " + e.getMessage(),
+                            "clientId", clientId
+                    ));
+        }
+    }
+    /**
+     * Supprime un SMS spécifique d'un client par sa référence
+     */
+    @DeleteMapping("/client/{clientId}/ref/{ref}")
+    public ResponseEntity<?> deleteClientSmsByRef(
+            @PathVariable String clientId,
+            @PathVariable String ref) {
+        try {
+            smsService.deleteClientSmsByRef(clientId, ref);
+            return ResponseEntity.ok()
+                    .body(Map.of(
+                            "success", true,
+                            "message", "SMS " + ref + " supprimé avec succès pour le client " + clientId,
+                            "clientId", clientId,
+                            "reference", ref
+                    ));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(404)
+                    .body(Map.of(
+                            "success", false,
+                            "error", e.getMessage(),
+                            "clientId", clientId,
+                            "reference", ref
+                    ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of(
+                            "success", false,
+                            "error", "Erreur lors de la suppression: " + e.getMessage(),
+                            "clientId", clientId,
+                            "reference", ref
+                    ));
+        }
+    }
+
+
 }

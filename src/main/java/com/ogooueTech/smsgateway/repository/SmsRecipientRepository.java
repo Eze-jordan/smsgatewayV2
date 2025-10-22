@@ -1,6 +1,7 @@
 package com.ogooueTech.smsgateway.repository;
 
 import com.ogooueTech.smsgateway.enums.SmsStatus;
+import com.ogooueTech.smsgateway.model.SmsMessage;
 import com.ogooueTech.smsgateway.model.SmsRecipient;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,5 +21,10 @@ public interface SmsRecipientRepository extends JpaRepository<SmsRecipient, Long
 
 
     List<SmsRecipient> findBySms_RefIn(List<String> refs);
-    
+
+    void deleteBySms_Ref(String ref);
+
+    // Méthode pour trouver tous les SMS d'un client
+    void deleteBySms_RefIn(List<String> refs);
+
 }

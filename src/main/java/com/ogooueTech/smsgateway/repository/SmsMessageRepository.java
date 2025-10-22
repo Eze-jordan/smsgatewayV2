@@ -69,5 +69,7 @@ public interface SmsMessageRepository extends JpaRepository<SmsMessage, String> 
     Optional<SmsMessage> findByRef(String ref);
     List<SmsMessage> findByStatut(SmsStatus statut);
 
+    // Méthodes pour trouver un SMS spécifique d'un client
+    Optional<SmsMessage> findByRefAndClientId(String ref, String clientId);
 
 }

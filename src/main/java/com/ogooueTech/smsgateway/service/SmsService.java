@@ -749,5 +749,41 @@ public class SmsService {
                 ))
                 .toList();
     }
+    /**
+     * Supprime un SMS spécifique d'un client par sa référence
+     */
+    @Transactional
+    public void deleteClientSmsByRef(String clientId, String ref) {
+        SmsMessage sms = smsRepo.findByRefAndClientId(ref, clientId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "SMS avec référence " + ref + " introuvable pour le client " + clientId));
 
+        // Supprimer d'abord tous les destinataires associés
+        recRepo.deleteBySms_Ref(ref);
+
+        // Puis supprimer le SMS
+        smsRepo.delete(sms);
+    }
+
+    /**
+     * Supprime tous les SMS d'un client (tous types confondus)
+     */
+    @Transactional
+    public void deleteAllSmsByClient(String clientId) {
+        // Récupérer tous les SMS du client (tous types)
+        List<SmsMessage> clientSms = smsRepo.findByClientId(clientId);
+
+        if (!clientSms.isEmpty()) {
+            // Récupérer toutes les références
+            List<String> refs = clientSms.stream()
+                    .map(SmsMessage::getRef)
+                    .collect(Collectors.toList());
+
+            // Supprimer tous les destinataires associés
+            recRepo.deleteBySms_RefIn(refs);
+
+            // Supprimer tous les SMS
+            smsRepo.deleteAll(clientSms);
+        }
+    }
 }

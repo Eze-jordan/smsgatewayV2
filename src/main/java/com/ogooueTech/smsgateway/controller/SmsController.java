@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -192,7 +193,6 @@ public class SmsController {
         return ResponseEntity.ok(pendingSms);
     }
 
-
     /**
      * Récupère les statistiques des SMS en attente
      */
@@ -226,8 +226,9 @@ public class SmsController {
 
     /**
      * Récupère les SMS en attente pour un client spécifique
+     * CHEMIN CORRIGÉ : utilisation d'un chemin unique
      */
-    @GetMapping("/client/{clientId}")
+    @GetMapping("/client/{clientId}/pending")
     @Operation(summary = "Obtenir les SMS en attente d'un client",
             description = "Retourne tous les SMS en attente pour un client spécifique")
     @ApiResponses({
@@ -322,12 +323,44 @@ public class SmsController {
         return smsService.getAllMuldesp(clientId);
     }
 
-    /* ===== DTOs internes ===== */
-    public record UnidesRequest(String clientId, String emetteur, String destinataire, String corps) {}
-    public record MuldesRequest(String clientId, String emetteur, List<String> numeros, String corps) {}
+    /* ===============================================
+       ===============  SMS PROGRAMÉS  ================
+       =============================================== */
 
-    private boolean isBlank(String s) {
-        return s == null || s.isBlank();
+    /**
+     * Récupère tous les SMS programés d'un client avec détails complets
+     * CHEMIN CORRIGÉ : utilisation d'un chemin spécifique
+     */
+    @GetMapping("/client/{clientId}/muldesp/details")
+    public ResponseEntity<List<SmsMuldesResponse>> getAllMuldespWithDetails(
+            @PathVariable String clientId) {
+        try {
+            List<SmsMuldesResponse> result = smsService.getAllMuldespWithDetails(clientId);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Récupère les SMS programés avec filtres avancés
+     */
+    @GetMapping("/client/{clientId}/muldesp/filter")
+    public ResponseEntity<List<SmsMuldesResponse>> getMuldespWithFilters(
+            @PathVariable String clientId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateDebut,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFin,
+            @RequestParam(required = false) Integer nbParJour,
+            @RequestParam(required = false) Integer intervalleMinutes,
+            @RequestParam(required = false) SmsStatus statut) {
+
+        try {
+            List<SmsMuldesResponse> result = smsService.getAllMuldespWithDetailsByFilters(
+                    clientId, dateDebut, dateFin, nbParJour, intervalleMinutes, statut);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     /**
@@ -352,6 +385,7 @@ public class SmsController {
                     ));
         }
     }
+
     /**
      * Supprime un SMS spécifique d'un client par sa référence
      */
@@ -387,5 +421,11 @@ public class SmsController {
         }
     }
 
+    /* ===== DTOs internes ===== */
+    public record UnidesRequest(String clientId, String emetteur, String destinataire, String corps) {}
+    public record MuldesRequest(String clientId, String emetteur, List<String> numeros, String corps) {}
 
+    private boolean isBlank(String s) {
+        return s == null || s.isBlank();
+    }
 }

@@ -56,6 +56,35 @@ public class DocumentService {
 
         return new UrlResource(path.toUri());
     }
+    // ========== MODIFIER / REMPLACER UN DOCUMENT ==========
+    public Document updateDocument(String originalName, MultipartFile newFile) throws IOException {
+        Optional<Document> docOpt = documentRepository.findByOriginalName(originalName);
+        if (docOpt.isEmpty()) {
+            throw new IOException("Document introuvable pour modification : " + originalName);
+        }
+
+        Document existingDoc = docOpt.get();
+
+        // Supprimer l'ancien fichier sur le disque
+        Path oldFilePath = fileStorageLocation.resolve(existingDoc.getStoredName()).normalize();
+        Files.deleteIfExists(oldFilePath);
+
+        // Enregistrer le nouveau fichier
+        String newOriginalName = Objects.requireNonNull(newFile.getOriginalFilename()).replace(" ", "_");
+        String newStoredName = UUID.randomUUID() + "_" + newOriginalName;
+        Path target = fileStorageLocation.resolve(newStoredName);
+
+        Files.copy(newFile.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+
+        // Mettre à jour les informations du document
+        existingDoc.setOriginalName(newOriginalName);
+        existingDoc.setStoredName(newStoredName);
+        existingDoc.setSize(newFile.getSize());
+        existingDoc.setType(newFile.getContentType() != null ? newFile.getContentType() : MediaType.APPLICATION_OCTET_STREAM_VALUE);
+
+        // Sauvegarder les modifications
+        return documentRepository.save(existingDoc);
+    }
 
     // ========== SUPPRESSION ==========
     public void delete(String originalName) throws IOException {

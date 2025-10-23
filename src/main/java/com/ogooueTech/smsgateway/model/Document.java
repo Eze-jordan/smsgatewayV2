@@ -50,4 +50,8 @@ public class Document {
     public String getViewUrl() {
         return "/api/V1/documents/view/" + originalName;
     }
+
+    public void setType(String s) {
+
+    }
 }

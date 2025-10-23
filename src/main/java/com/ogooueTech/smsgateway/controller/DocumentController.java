@@ -9,6 +9,7 @@
     import org.springframework.web.bind.annotation.*;
     import org.springframework.web.multipart.MultipartFile;
 
+    import java.io.IOException;
     import java.util.List;
 
     @RestController
@@ -37,6 +38,19 @@
         public List<Document> list() {
             return documentService.listAll();
         }
+
+        @PutMapping("/update/{originalName}")
+        public ResponseEntity<Document> updateDocument(
+                @PathVariable String originalName,
+                @RequestParam("file") MultipartFile newFile) {
+            try {
+                Document updated = documentService.updateDocument(originalName, newFile);
+                return ResponseEntity.ok(updated);
+            } catch (IOException e) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            }
+        }
+
 
         @GetMapping("/view/{fileName:.+}")
         @Operation(summary = "Visualiser un document")

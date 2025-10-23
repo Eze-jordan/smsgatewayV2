@@ -313,15 +313,15 @@ public class NotificationService {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setFrom(from);
             helper.setTo(client.getEmail());
-            helper.setSubject("Demande de crédit enregistrée — SMS-GATEWAY");
+            helper.setSubject("Commande de SMS enregistrée — SMS-GATEWAY");
 
             String html = """
         <div style="font-family: Arial, sans-serif; background:#f9f9f9; padding:24px">
           <div style="max-width:600px; margin:auto; background:#fff; border-radius:8px; padding:24px">
-            <h2 style="color:#2c3e50">Demande de crédit reçue ✅</h2>
+            <h2 style="color:#2c3e50">Commande de SMS enregistrée ✅</h2>
             <p>Bonjour <strong>%s</strong>,</p>
-            <p>Votre demande de crédit de <strong>%d SMS</strong> a bien été enregistrée.</p>
-            <p><b>Code de demande :</b> <span style="color:#2980b9">%s</span></p>
+            <p>Votre Commande de  <strong>%d SMS</strong> a bien été enregistrée,</p>
+            <p><b>sous la réference :</b> <span style="color:#2980b9">%s</span></p>
             <p>👉 Elle est en attente de validation. Vous serez notifié dès qu’elle sera validée ou rejetée.</p>
             <p style="color:#999; font-size:12px; margin-top:16px">— SMS-GATEWAY</p>
           </div>
@@ -348,14 +348,14 @@ public class NotificationService {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setFrom(from);
             helper.setTo(client.getEmail());
-            helper.setSubject("Crédit validé — SMS-GATEWAY");
+            helper.setSubject("Commande de SMS approuvée — SMS-GATEWAY");
 
             String html = """
             <div style="font-family: Arial, sans-serif; background:#e6f9ec; padding:24px">
               <div style="max-width:600px; margin:auto; background:#fff; border-radius:8px; padding:24px">
-                <h2 style="color:#27ae60">Crédit validé ✅</h2>
+                <h2 style="color:#27ae60">Commande approuvée ✅</h2>
                 <p>Bonjour <strong>%s</strong>,</p>
-                <p>Votre demande de <strong>%d SMS</strong> a été approuvée.</p>
+                <p>Votre Commande de <strong>%d SMS</strong> a été approuvée.</p>
                 <p>📌 Nouveau solde : <strong>%d SMS</strong></p>
                 <p>Merci pour votre confiance.</p>
                 <p style="color:#999; font-size:12px; margin-top:16px">— SMS-GATEWAY</p>

@@ -51,7 +51,4 @@ public class Document {
         return "/api/V1/documents/view/" + originalName;
     }
 
-    public void setType(String s) {
-
-    }
 }

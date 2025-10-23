@@ -10,7 +10,9 @@
     import org.springframework.web.multipart.MultipartFile;
 
     import java.io.IOException;
+    import java.util.HashMap;
     import java.util.List;
+    import java.util.Map;
 
     @RestController
     @RequestMapping("/api/V1/documents")
@@ -79,14 +81,17 @@
             }
         }
 
-        @DeleteMapping("/{fileName:.+}")
-        @Operation(summary = "Supprimer un document")
-        public ResponseEntity<Void> delete(@PathVariable String fileName) {
+        @DeleteMapping("/{originalName:.+}")
+        @Operation(summary = "Supprimer un document (fichier + base)")
+        public ResponseEntity<Map<String, Object>> delete(@PathVariable String originalName) {
             try {
-                documentService.delete(fileName);
-                return ResponseEntity.noContent().build();
+                Map<String, Object> result = documentService.delete(originalName);
+                return ResponseEntity.ok(result);
             } catch (Exception e) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+                Map<String, Object> error = new HashMap<>();
+                error.put("error", e.getMessage());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
             }
         }
+
     }

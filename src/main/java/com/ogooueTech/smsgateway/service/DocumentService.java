@@ -28,6 +28,11 @@ public class DocumentService {
     // ========== UPLOAD ==========
     public Document upload(MultipartFile file) throws IOException {
         String originalName = Objects.requireNonNull(file.getOriginalFilename()).replace(" ", "_");
+
+        if (documentRepository.findByOriginalName(originalName).isPresent()) {
+            throw new IOException("Un document avec ce nom existe déjà : " + originalName);
+        }
+
         String storedName = UUID.randomUUID() + "_" + originalName;
         Path target = fileStorageLocation.resolve(storedName);
 
@@ -38,6 +43,7 @@ public class DocumentService {
         Document document = new Document(storedName, originalName, file.getSize(), contentType);
         return documentRepository.save(document);
     }
+
 
     // ========== LISTE ==========
     public List<Document> listAll() {
@@ -80,19 +86,41 @@ public class DocumentService {
         existingDoc.setOriginalName(newOriginalName);
         existingDoc.setStoredName(newStoredName);
         existingDoc.setSize(newFile.getSize());
-        existingDoc.setType(newFile.getContentType() != null ? newFile.getContentType() : MediaType.APPLICATION_OCTET_STREAM_VALUE);
+        existingDoc.setContentType(
+                newFile.getContentType() != null ? newFile.getContentType() : MediaType.APPLICATION_OCTET_STREAM_VALUE
+        );
 
         // Sauvegarder les modifications
         return documentRepository.save(existingDoc);
     }
 
-    // ========== SUPPRESSION ==========
-    public void delete(String originalName) throws IOException {
-        Optional<Document> docOpt = documentRepository.findByOriginalName(originalName);
-        if (docOpt.isEmpty()) throw new IOException("Document introuvable.");
+    // ========== SUPPRESSION ROBUSTE ==========
+    public Map<String, Object> delete(String originalName) throws IOException {
+        List<Document> docs = documentRepository.findAll()
+                .stream()
+                .filter(d -> d.getOriginalName().equals(originalName))
+                .toList();
 
-        Path filePath = fileStorageLocation.resolve(docOpt.get().getStoredName());
-        Files.deleteIfExists(filePath);
-        documentRepository.deleteByOriginalName(originalName);
+        if (docs.isEmpty()) {
+            throw new IOException("Aucun document trouvé avec le nom : " + originalName);
+        }
+
+        int deletedFiles = 0;
+
+        for (Document doc : docs) {
+            Path filePath = fileStorageLocation.resolve(doc.getStoredName());
+            if (Files.exists(filePath)) {
+                Files.delete(filePath);
+                deletedFiles++;
+            }
+            documentRepository.delete(doc);
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("deletedDocuments", docs.size());
+        response.put("deletedFiles", deletedFiles);
+        response.put("message", "Suppression effectuée avec succès.");
+        return response;
     }
+
 }

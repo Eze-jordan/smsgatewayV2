@@ -91,6 +91,11 @@ public class SmsService {
     public SmsMessage createUnides(String clientId, String emetteur, String destinataire, String corps) {
         validatePhone(destinataire);
         validateBody(corps);
+
+        Client client = clientRepo.findById(clientId)
+                .orElseThrow(() -> new IllegalArgumentException("Client introuvable"));
+        verifyPrepayeBeforeCreation(client, 1);
+
         SmsMessage sms = new SmsMessage();
         sms.setRef(generateRef());
         sms.setType(SmsType.UNIDES);
@@ -107,6 +112,12 @@ public class SmsService {
     public SmsMessage createMuldes(String clientId, String emetteur, List<String> numeros, String corps) {
         validateBody(corps);
         if (numeros == null || numeros.isEmpty()) throw new IllegalArgumentException("Aucun destinataire");
+        // ✅ Récupérer le client AVANT de vérifier le solde
+        Client client = clientRepo.findById(clientId)
+                .orElseThrow(() -> new IllegalArgumentException("Client introuvable"));
+
+        // 🔥 Vérification PREPAYÉ ici
+        verifyPrepayeBeforeCreation(client, numeros.size());
 
         SmsMessage sms = baseMulti(clientId, emetteur, corps, SmsType.MULDES);
 
@@ -121,10 +132,21 @@ public class SmsService {
                                     LocalDate dateDebut, Integer nbParJour,
                                     Integer intervalleMinutes, LocalDate dateFin) {
         validateBody(corps);
+        if (numeros == null || numeros.isEmpty())
+            throw new IllegalArgumentException("Aucun destinataire");
+
         if (dateDebut == null || dateFin == null || nbParJour == null || intervalleMinutes == null)
             throw new IllegalArgumentException("Paramètres de planification manquants");
-        if (dateDebut.isAfter(dateFin)) throw new IllegalArgumentException("dateDebut > dateFin");
 
+        if (dateDebut.isAfter(dateFin))
+            throw new IllegalArgumentException("dateDebut > dateFin");
+
+        // ✅ Récupérer le client ici
+        Client client = clientRepo.findById(clientId)
+                .orElseThrow(() -> new IllegalArgumentException("Client introuvable"));
+
+        // 🔥 Vérification PREPAYÉ du solde
+        verifyPrepayeBeforeCreation(client, numeros.size());
         SmsMessage sms = baseMulti(clientId, emetteur, corps, SmsType.MULDESP);
         sms.setDateDebutEnvoi(dateDebut);
         sms.setDateFinEnvoi(dateFin);
@@ -578,6 +600,18 @@ public class SmsService {
         String s = n.replaceAll("\\s", ""); // Supprime seulement les espaces
 
         return s;
+    }
+    /* ========= Vérification PREPAYÉ avant création ========= */
+    private void verifyPrepayeBeforeCreation(Client client, int recipientsCount) {
+        if (isPrepaye(client)) {
+            int solde = getSoldeNet(client);
+            if (solde < recipientsCount) {
+                throw new IllegalStateException(
+                        "Solde insuffisant : " + solde +
+                                " SMS disponibles, mais " + recipientsCount + " requis."
+                );
+            }
+        }
     }
 
 

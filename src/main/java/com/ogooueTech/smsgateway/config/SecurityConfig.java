@@ -94,29 +94,33 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // ✅ On autorise plusieurs domaines + wildcard (*)
+        // Domaines frontend autorisés
         configuration.addAllowedOriginPattern("http://localhost:3001");
-        configuration.addAllowedOriginPattern("*"); // tous les domaines externes autorisés
+        configuration.addAllowedOriginPattern("https://client-smsgateway.solutech-one.com");
+        configuration.addAllowedOriginPattern("https://admin-smsgateway.solutech-one.com");
 
-        // ✅ Autoriser toutes les méthodes HTTP
+        // Tous les domaines externes autorisés
+        configuration.addAllowedOriginPattern("*");
+
+        // Autoriser toutes les méthodes HTTP
         configuration.setAllowedMethods(Arrays.asList("*"));
 
-        // ✅ Autoriser tous les headers
+        // Autoriser tous les headers
         configuration.setAllowedHeaders(Arrays.asList("*"));
 
-        // ✅ Exposer certains headers dans la réponse (visibles côté client)
+        // Exposer certains headers dans la réponse
         configuration.setExposedHeaders(Arrays.asList(
                 "Authorization",
                 "Content-Disposition"
         ));
 
-        // ✅ Autoriser les cookies / tokens JWT
+        // Autoriser cookies / tokens JWT
         configuration.setAllowCredentials(true);
 
-        // ✅ Mise en cache de la politique CORS (1h)
+        // Cache CORS 1h
         configuration.setMaxAge(3600L);
 
-        // ✅ Appliquer la config à toutes les routes
+        // Appliquer à toutes les routes
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
 

@@ -1,10 +1,10 @@
 package com.ogooueTech.smsgateway.config;
 
-
 import com.ogooueTech.smsgateway.securite.ApiKeyFilter;
 import com.ogooueTech.smsgateway.securite.JwtFiller;
 import com.ogooueTech.smsgateway.service.CustomUserDetailsService;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -23,33 +23,77 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
     private final CustomUserDetailsService customUserDetailsService;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final JwtFiller jwtFiller;
     private final ApiKeyFilter apiKeyFilter;
 
-    public SecurityConfig(CustomUserDetailsService customUserDetailsService,
-                          BCryptPasswordEncoder bCryptPasswordEncoder,
-                          JwtFiller jwtFiller, ApiKeyFilter apiKeyFilter) {
+    /*
+     * Les valeurs CORS sont maintenant chargées depuis
+     * application.properties, lui-même alimenté par les
+     * variables d'environnement de la VM.
+     */
+    private final String allowedOriginPatterns;
+    private final String allowedMethods;
+    private final String allowedHeaders;
+    private final String exposedHeaders;
+    private final boolean allowCredentials;
+    private final long maxAge;
+
+    public SecurityConfig(
+            CustomUserDetailsService customUserDetailsService,
+            BCryptPasswordEncoder bCryptPasswordEncoder,
+            JwtFiller jwtFiller,
+            ApiKeyFilter apiKeyFilter,
+            @Value("${app.security.cors.allowed-origin-patterns}")
+            String allowedOriginPatterns,
+            @Value("${app.security.cors.allowed-methods}")
+            String allowedMethods,
+            @Value("${app.security.cors.allowed-headers}")
+            String allowedHeaders,
+            @Value("${app.security.cors.exposed-headers}")
+            String exposedHeaders,
+            @Value("${app.security.cors.allow-credentials}")
+            boolean allowCredentials,
+            @Value("${app.security.cors.max-age}")
+            long maxAge
+    ) {
         this.customUserDetailsService = customUserDetailsService;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
         this.jwtFiller = jwtFiller;
         this.apiKeyFilter = apiKeyFilter;
+        this.allowedOriginPatterns = allowedOriginPatterns;
+        this.allowedMethods = allowedMethods;
+        this.allowedHeaders = allowedHeaders;
+        this.exposedHeaders = exposedHeaders;
+        this.allowCredentials = allowCredentials;
+        this.maxAge = maxAge;
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http
+    ) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(cors -> cors.configurationSource(
+                        corsConfigurationSource()
+                ))
                 .csrf(AbstractHttpConfigurer::disable)
                 .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
-                        })
+                        .authenticationEntryPoint(
+                                (request, response, authException) -> {
+                                    response.sendError(
+                                            HttpServletResponse.SC_UNAUTHORIZED,
+                                            "Unauthorized"
+                                    );
+                                }
+                        )
                 )
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(
@@ -71,72 +115,116 @@ public class SecurityConfig {
                                 "/send-test-email",
                                 "/v3/api-docs/**"
                         ).permitAll()
-                        .requestMatchers("/api/V1/sms/unides",
+                        .requestMatchers(
+                                "/api/V1/sms/unides",
                                 "/api/V1/sms/muldes",
-                                "/api/V1/sms/muldesp").permitAll()
+                                "/api/V1/sms/muldesp"
+                        ).permitAll()
 
-                        // ✅ Les endpoints SMS sont maintenant protégés par clé API
-                        .requestMatchers("/api/V1/sms/unides",
+                        .requestMatchers(
+                                "/api/V1/sms/unides",
                                 "/api/V1/sms/muldes",
-                                "/api/V1/sms/muldesp").authenticated()
-                        .anyRequest().authenticated()
-
+                                "/api/V1/sms/muldesp"
+                        ).authenticated()
+                        .anyRequest()
+                        .authenticated()
                 )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // ✅ On ajoute le filtre API Key avant le filtre JWT
-                .addFilterBefore(apiKeyFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(jwtFiller, UsernamePasswordAuthenticationFilter.class);
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS
+                        )
+                )
+                .addFilterBefore(
+                        apiKeyFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                )
+                .addFilterBefore(
+                        jwtFiller,
+                        UsernamePasswordAuthenticationFilter.class
+                );
 
         return http.build();
     }
 
-    @Bean
+  @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
+        CorsConfiguration configuration =
+                new CorsConfiguration();
 
-        // Domaines frontend autorisés
-        configuration.addAllowedOriginPattern("http://localhost:3001");
-        configuration.addAllowedOriginPattern("https://client-smsgateway.solutech-one.com");
-        configuration.addAllowedOriginPattern("https://admin-smsgateway.solutech-one.com");
+        /*
+         * Chaque variable peut contenir plusieurs valeurs
+         * séparées par des virgules.
+         */
+        configuration.setAllowedOriginPatterns(
+                convertirEnListe(allowedOriginPatterns)
+        );
 
-        // Tous les domaines externes autorisés
-        configuration.addAllowedOriginPattern("*");
+        configuration.setAllowedMethods(
+                convertirEnListe(allowedMethods)
+        );
 
-        // Autoriser toutes les méthodes HTTP
-        configuration.setAllowedMethods(Arrays.asList("*"));
+        configuration.setAllowedHeaders(
+                convertirEnListe(allowedHeaders)
+        );
 
-        // Autoriser tous les headers
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setExposedHeaders(
+                convertirEnListe(exposedHeaders)
+        );
 
-        // Exposer certains headers dans la réponse
-        configuration.setExposedHeaders(Arrays.asList(
-                "Authorization",
-                "Content-Disposition"
-        ));
+        configuration.setAllowCredentials(
+                allowCredentials
+        );
 
-        // Autoriser cookies / tokens JWT
-        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(
+                maxAge
+        );
 
-        // Cache CORS 1h
-        configuration.setMaxAge(3600L);
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
 
-        // Appliquer à toutes les routes
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        source.registerCorsConfiguration(
+                "/**",
+                configuration
+        );
 
         return source;
     }
+
+    /**
+     * Transforme une chaîne séparée par des virgules
+     * en liste de valeurs nettoyées.
+     */
+    private List<String> convertirEnListe(String values) {
+        if (values == null || values.isBlank()) {
+            return List.of();
+        }
+
+        return Arrays.stream(values.split(","))
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .toList();
+    }
+
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config)
-            throws Exception {
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration config
+    ) throws Exception {
         return config.getAuthenticationManager();
     }
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(customUserDetailsService);
-        provider.setPasswordEncoder(bCryptPasswordEncoder);
+        DaoAuthenticationProvider provider =
+                new DaoAuthenticationProvider();
+
+        provider.setUserDetailsService(
+                customUserDetailsService
+        );
+
+        provider.setPasswordEncoder(
+                bCryptPasswordEncoder
+        );
+
         return provider;
     }
 }

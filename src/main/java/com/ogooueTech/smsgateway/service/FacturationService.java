@@ -19,15 +19,25 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
-
+/**
+ * Service chargé de la génération et de la consultation des factures.
+ *
+ * Les factures mensuelles sont générées uniquement pour les clients :
+ * - possédant un compte POSTPAYE ;
+ * - dont le compte est actif ;
+ * - dont la consommation est supérieure à zéro ;
+ * - dont le prix unitaire du SMS est renseigné.
+ */
 @Service
 public class FacturationService {
 
-    private final InvoiceAppService invoiceAppService; // ✅ ajout
+
+    private final InvoiceAppService invoiceAppService;
     private final ExerciceRepository exerciceRepository;
     private final CalendrierFacturationRepository calendrierRepository;
     private final ClientRepository clientRepository;
     private final FactureRepository factureRepository;
+
 
     public FacturationService(
             InvoiceAppService invoiceAppService,
@@ -42,7 +52,13 @@ public class FacturationService {
         this.clientRepository = clientRepository;
         this.factureRepository = factureRepository;
     }
-
+    /**
+     * Génère les factures mensuelles de tous les clients postpayés actifs.
+     *
+     * @param annee année de facturation
+     * @param mois mois de facturation, compris entre 1 et 12
+     * @return résultat de l'opération de facturation
+     */
     @Transactional
     public BillingRunResult genererFacturesMensuelles(int annee, int mois) {
         Exercice exercice = exerciceRepository
@@ -107,7 +123,14 @@ public class FacturationService {
 
         return new BillingRunResult(created, zero, dup, missingPrice);
     }
-
+    /**
+     * Génère une facture mensuelle pour un seul client.
+     *
+     * @param clientId identifiant du client
+     * @param annee année de facturation
+     * @param mois mois de facturation
+     * @return résultat de l'opération
+     */
     @Transactional
     public BillingRunResult genererFactureMensuellePourClient(String clientId, int annee, int mois) {
         Exercice exercice = exerciceRepository
@@ -171,14 +194,25 @@ public class FacturationService {
 
         return new BillingRunResult(1, 0, 0, 0);
     }
-
+    /**
+     * Retourne toutes les factures.
+     *
+     * Cette méthode doit être réservée aux utilisateurs autorisés.
+     *
+     * @return liste complète des factures
+     */
     @Transactional(readOnly = true)
     public List<Facture> getAllFactures() {
         return factureRepository.findAll();
     }
 
     public record BillingRunResult(int generated, int skippedZero, int skippedDuplicate, int skippedMissingPrice) {}
-
+    /**
+     * Retourne les factures appartenant à un client.
+     *
+     * @param clientId identifiant du client
+     * @return liste des factures du client
+     */
     @Transactional(readOnly = true)
     public List<FactureDTO> getFacturesByClient(String clientId) {
         return factureRepository.findByClient_Idclients(clientId)
@@ -186,7 +220,14 @@ public class FacturationService {
                 .map(FactureDTO::from)
                 .toList();
     }
-
+    /**
+     * Retourne les factures d'un client comprises dans une période.
+     *
+     * @param clientId identifiant du client
+     * @param start début de la période
+     * @param end fin de la période
+     * @return liste des factures correspondantes
+     */
     @Transactional(readOnly = true)
     public List<FactureDTO> getFacturesByClientAndDateRange(String clientId, LocalDate start, LocalDate end) {
         return factureRepository.findByClient_IdclientsAndDateDebutGreaterThanEqualAndDateFinLessThanEqual(
@@ -195,4 +236,6 @@ public class FacturationService {
                 .map(FactureDTO::from)
                 .toList();
     }
+
+
 }

@@ -11,12 +11,28 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
+/**
+ * Service chargé de générer le document PDF d'une facture.
+ *
+ * Le modèle Thymeleaf utilisé est :
+ *
+ * src/main/resources/templates/invoice.html
+ *
+ * Les images et feuilles de style peuvent être placées dans :
+ *
+ * src/main/resources/static/
+ */
 @Service
 public class InvoicePdfService {
 
     private final SpringTemplateEngine templateEngine;
     private final FooterInfoService footerInfoService; // ✅ service du footer
-
+    /**
+     * Injection des dépendances.
+     *
+     * @param templateEngine moteur de modèles Thymeleaf
+     * @param footerInfoService service des informations légales
+     */
     public InvoicePdfService(SpringTemplateEngine templateEngine,
                              FooterInfoService footerInfoService) {
         this.templateEngine = templateEngine;

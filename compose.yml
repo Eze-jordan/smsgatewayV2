@@ -8,6 +8,9 @@ services:
 
     restart: unless-stopped
 
+    env_file:
+      - /opt/smsgateway/secrets/smsgateway.env
+
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -15,14 +18,13 @@ services:
       - "9088:8080"
 
     environment:
-      SPRING_DATASOURCE_URL: "jdbc:postgresql://host.docker.internal:5432/smsgatewaydb"
-      SPRING_DATASOURCE_USERNAME: "smsgateway"
-      SPRING_DATASOURCE_PASSWORD: "7aa4c734664b9b203a77d5db53ef7e19e74e38d516e398f7"
-
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: "org.postgresql.Driver"
 
       SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
-      SPRING_JPA_SHOW_SQL: "true"
+
+      # Désactive l'affichage de toutes les requêtes SQL dans la console.
+      SPRING_JPA_SHOW_SQL: "false"
+
       SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: "org.hibernate.dialect.PostgreSQLDialect"
 
     networks:

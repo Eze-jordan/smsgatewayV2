@@ -8,6 +8,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.ogooueTech.smsgateway.exception.ManagerNotFoundException;
+
+
+import java.util.Locale;
 
 @Service
 @Transactional
@@ -32,9 +36,27 @@ public class ManagerPasswordResetService {
 
     /** Étape 1 : génération et envoi du token */
     public void forgotPassword(String email) {
-        Manager manager = managerRepository.findByEmail(email)
-                .orElseThrow(() -> new EntityNotFoundException("Aucun manager avec cet email"));
-        String token = jwtService.generatePasswordResetToken(manager.getIdManager(), resetExpiryMinutes);
+        String normalizedEmail = email == null
+                ? ""
+                : email.trim().toLowerCase(Locale.ROOT);
+
+        if (normalizedEmail.isBlank()) {
+            throw new IllegalArgumentException(
+                    "L'adresse e-mail est obligatoire"
+            );
+        }
+
+        Manager manager = managerRepository
+                .findByEmail(normalizedEmail)
+                .orElseThrow(() -> new ManagerNotFoundException(
+                        "Aucun manager ne correspond à cette adresse e-mail"
+                ));
+
+        String token = jwtService.generatePasswordResetToken(
+                manager.getIdManager(),
+                resetExpiryMinutes
+        );
+
         notificationService.envoyerResetManager(manager, token);
     }
 
